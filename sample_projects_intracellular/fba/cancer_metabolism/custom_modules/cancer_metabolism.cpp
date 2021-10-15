@@ -132,7 +132,7 @@ void setup_microenvironment( void )
 	return; 
 }
 
-std::vector<std::vector<double>> create_cell_sphere_positions(double cell_radius, double sphere_radius)
+std::vector<std::vector<double>> create_cell_disc_positions(double cell_radius, double disc_radius)
 {
 	std::vector<std::vector<double>> cells;
 	int xc=0,yc=0,zc=0;
@@ -141,21 +141,17 @@ std::vector<std::vector<double>> create_cell_sphere_positions(double cell_radius
 	double z_spacing= cell_radius*sqrt(3);
 
 	std::vector<double> tempPoint(3,0.0);
-	// std::vector<double> cylinder_center(3,0.0);
-
-	for(double z=-sphere_radius;z<sphere_radius;z+=z_spacing, zc++)
+	double z = 0;
+	for(double x=-sphere_radius;x<sphere_radius;x+=x_spacing, xc++)
 	{
-		for(double x=-sphere_radius;x<sphere_radius;x+=x_spacing, xc++)
+		for(double y=-sphere_radius;y<sphere_radius;y+=y_spacing, yc++)
 		{
-			for(double y=-sphere_radius;y<sphere_radius;y+=y_spacing, yc++)
-			{
-				tempPoint[0]=x + (zc%2) * 0.5 * cell_radius;
-				tempPoint[1]=y + (xc%2) * cell_radius;
-				tempPoint[2]=z;
+			tempPoint[0]=x + (zc%2) * 0.5 * cell_radius;
+			tempPoint[1]=y + (xc%2) * cell_radius;
+			tempPoint[2]=z;
 
-				if(sqrt(norm_squared(tempPoint))< sphere_radius)
-				{ cells.push_back(tempPoint); }
-			}
+			if(sqrt(norm_squared(tempPoint))< sphere_radius)
+			{ cells.push_back(tempPoint); }
 		}
 	}
 	return cells;
@@ -256,4 +252,56 @@ std::vector<std::string> my_coloring_function( Cell* pCell )
 	}
 
 	return output;
+}
+
+
+std::vector<std::string> metabolic_coloring_function( Cell* pCell )
+{
+	dFBAIntracellular *model = (dFBAIntracellular*) phenotype.intracellular;
+
+	model->
+	static int oncoprotein_i = pCell->custom_data.find_variable_index( "oncoprotein" ); 
+	
+	static double p_min = parameters.doubles( "oncoprotein_min" ); 
+	static double p_max = parameters.doubles( "oncoprotein_max" ); 
+	
+	// immune are black
+	std::vector< std::string > output( 4, "black" ); 
+	
+	if( pCell->type == 1 )
+	{ return output; } 
+	
+	// live cells are green, but shaded by oncoprotein value 
+	if( pCell->phenotype.death.dead == false )
+	{
+		int oncoprotein = (int) round( (1.0/(p_max-p_min)) * (pCell->custom_data[oncoprotein_i]-p_min) * 255.0 ); 
+		char szTempString [128];
+		sprintf( szTempString , "rgb(%u,%u,%u)", oncoprotein, oncoprotein, 255-oncoprotein );
+		output[0].assign( szTempString );
+		output[1].assign( szTempString );
+
+		sprintf( szTempString , "rgb(%u,%u,%u)", (int)round(output[0][0]/p_max) , (int)round(output[0][1]/p_max) , (int)round(output[0][2]/p_max) );
+		output[2].assign( szTempString );
+		
+		return output; 
+	}
+
+	// if not, dead colors 
+	
+	if (pCell->phenotype.cycle.current_phase().code == PhysiCell_constants::apoptotic )  // Apoptotic - Red
+	{
+		output[0] = "rgb(255,0,0)";
+		output[2] = "rgb(125,0,0)";
+	}
+	
+	// Necrotic - Brown
+	if( pCell->phenotype.cycle.current_phase().code == PhysiCell_constants::necrotic_swelling || 
+		pCell->phenotype.cycle.current_phase().code == PhysiCell_constants::necrotic_lysed || 
+		pCell->phenotype.cycle.current_phase().code == PhysiCell_constants::necrotic )
+	{
+		output[0] = "rgb(250,138,38)";
+		output[2] = "rgb(139,69,19)";
+	}	
+	
+	return output; 
 }
