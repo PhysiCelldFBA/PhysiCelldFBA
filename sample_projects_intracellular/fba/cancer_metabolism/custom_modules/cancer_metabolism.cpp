@@ -259,7 +259,6 @@ std::vector<std::string> metabolic_coloring_function( Cell* pCell )
 {
 	dFBAIntracellular *model = (dFBAIntracellular*) phenotype.intracellular;
 
-	model->
 	static int oncoprotein_i = pCell->custom_data.find_variable_index( "oncoprotein" ); 
 	
 	static double p_min = parameters.doubles( "oncoprotein_min" ); 

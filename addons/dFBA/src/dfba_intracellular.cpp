@@ -274,6 +274,8 @@ void dFBAIntracellular::update(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phe
 
     */
 
+    std::vector<double> density_vector = pCell->nearest_density_vector(); // 
+
     // Setp 1 - Update exchange fluxes lower
     map<std::string, exchange_data>::iterator it;
     for(it = this->substrate_exchanges.begin(); it != this->substrate_exchanges.end(); it++)
@@ -288,13 +290,15 @@ void dFBAIntracellular::update(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phe
         double Km = ex_strut.Km.value;
         
         // geting the amount of substrate
-        double substrate_conc = pCell->nearest_density_vector()[ex_strut.density_index];
+        
+
+        double density = density_vector[ex_strut.density_index];;
 
         // PROBLEM TO SOLVE
         // having substrate_conc in the proper units that match FBA
 
         // useing irreversible Michaelis Menten kinetics to estimate the flux bound
-        double flux_bound = (Vmax * substrate_conc) / (Km + substrate_conc); // should be calculated from density
+        double flux_bound = (Vmax * density) / (Km + density); // should be calculated from density
         // Change sign to use as lower bound of the exchange flux
         double exchange_flux_lb = -1 * max_rate;
         // Updateing the lower bound of the corresponding exchange flux
@@ -331,8 +335,7 @@ void dFBAIntracellular::update(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phe
         
         FBA_reaction* exchange = this->model.getReaction(fba_flux_id);
         // flux units: mmol / gDW cell / h
-        double flux = exchange->getFluxValue();
-        flux *= -1;
+        double fba_exchange_flux = -1 * exchange->getFluxValue();
         
         // voxel volumne = 8000 um³ = 0.8e-11 L
         // FLUXES Units: mmol / gDW cell / hr
@@ -340,40 +343,45 @@ void dFBAIntracellular::update(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phe
         // MULTIPLYER (hr) --> * (dt/60)
 
         // HeLa cell mass 2.3 ng
-        // cell_density --> 1.04 g/ml = 1.04 ug/nL = 1.04 ng / pL = 0.00104 ng / fL
+        // cell_density --> 1.04 g/ml = 1.04 ug/nL = 1.04 ng / pL = 1.04 pg / fL = pg / um³
         // cell volume fL (um³)
         
-        // cell.mass.total (ng) = cell.volume (um³) * cell.density (ng / um³)
-        // ~2.6 (ng) = ~2500 (um³) * ~0.00104 ng / (um³)
+        // cell.mass.total (ng) = cell.volume (um³) * cell.density (pg / um³)
+        // ~2600 (pg) = ~2500 (um³) * 1.04 ng / (um³)
         
         // gDW cell (cell.volume.total * cell_density) = mass.total
         // cell.mass.solid = cell.mass.total * (1-fluid_frac)
 
-        // MULTIPLYER (gDW cell) --> * cell.mass.solid (ng DW cell)
+        // MULTIPLYER (gDW cell) --> * cell.mass.solid (ng DW cell) (1e-9g)
+
+        // mmol * 1e-9 = pmol = 1e-12 mol
+        // 1e-12 mol / 0.8e-11 L = 0.125 mol/L
         
         
         // mmol / per_gDW_per_hr 
         
         // 
-        // mM: mmol / L
+        // mM: mmol / L = 10⁻³ mol / 1e-15 um³ = pmol / um³
         // how to rescale FBA exchanges into net_export_rates
+
+        // cell density (from HeLa) g / ml
         // ml = 1e+12 um³
         // g = 1e+12 pg
-        // cell density (from HeLa) g / ml = pg / um³
+        // g / ml = pg / um³
         
-        float cell_density = 1.04;
-        float solid_fraction = (1 - phenotype.volume.fluid_fraction) ;
+        float cell_density = 1.04; // pg / um³
+        float solid_fraction = (1 - phenotype.volume.fluid_fraction); // unitless
         // dry wight units: pg
-        float dry_weight = (phenotype.volume.total * cell_density) * solid_fraction
-        float scaling = 1;
+        float dry_weight = (phenotype.volume.total * cell_density) * solid_fraction // um³ * pg / um³ = pg
         
-        float net_export_rate = flux * dry_weight * dt
         
-        flux *= scaling;
+        float net_export_rate = flux * dry_weight / 60. // mmol * 1/gDW * 1/hr * pg * 1/60 = mmol * 10⁻¹² = fmol/min
+        net_export_rate = 1E-3 * net_export_rate; // pmol/min
         phenotype.secretion.net_export_rates[density_index] = flux;
 
         // STEP 4 - setting internalized total substrate to 0
-        phenotype.molecular.internalized_total_substrates[density_index] = 0;
+        // NOT NEEDED is track_internalized is set to false in XML config 
+        // phenotype.molecular.internalized_total_substrates[density_index] = 0;
 
         
     }
