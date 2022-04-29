@@ -355,6 +355,7 @@ void dFBAModel::writeProblem(const char *filename)
 dFBASolution dFBAModel::optimize()
 {
     std::cout << "Running FBA... ";
+    
     this->lp_model.primal();
     if ( lp_model.isProvenOptimal() )
     {
