@@ -248,6 +248,7 @@
 				<molecular />
 				<intracellular type="dfba">
 					<sbml_filename>./config/iSIM.xml</sbml_filename>
+					<intracellular_dt>0.01</intracellular_dt>
 					<exchange substrate="glucose">
 						<fba_flux>R_E1</fba_flux>
 						<Km units="mM">0.2</Km>

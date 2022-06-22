@@ -40,15 +40,15 @@ int dFBAIntracellular::parse_transport_model(pugi::xml_node& node)
 	{
 		string density_name = node_exchange.attribute( "substrate" ).value(); 
         int density_index = microenvironment.find_density_index( density_name ); 
-        std::cout << "Parsing " << density_name << std::endl;
         std::string actual_name = microenvironment.density_names[ density_index ]; 
 			
         // error check 
         if( std::strcmp( density_name.c_str() , actual_name.c_str() ) != 0 )
         {
-            std::cout << "Error: attempted to set secretion/uptake/export for \"" 
-                << density_name << "\", which was not found in the microenvironment." << std::endl 
-            << "       Please double-check your substrate name in the config file." << std::endl << std::endl; 
+            std::cout << "Error: attempted to set secretion/uptake/export for \""; 
+            std::cout << density_name << "\", which was not found in the microenvironment." << std::endl;
+            std::cout << "Please double-check your substrate name in the config file." << std::endl;
+            std::cout << std::endl;
             exit(-1); 
         }
         
@@ -333,7 +333,6 @@ void dFBAIntracellular::update(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phe
     // STEP 2 - run FBA
     this->model.runFBA();
 
-
     // STEP 3 - Update cell volumen using growth rate (first rscale growth rate to 1/min)
     float growth_rate = this->model.getObjectiveValue();
     growth_rate = growth_rate * hours_to_minutes; // growth_rate 1/h -> 1/min
@@ -367,7 +366,7 @@ void dFBAIntracellular::update(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phe
         phenotype.secretion.net_export_rates[density_index] = net_export_rate;
         
         // STEP 4 - setting internalized total substrate to 0
-        // NOT NEEDED is track_internalized is set to false in XML config 
+        // NOT NEEDED if track_internalized is set to false in XML config 
         // phenotype.molecular.internalized_total_substrates[density_index] = 0;
     }
 }
