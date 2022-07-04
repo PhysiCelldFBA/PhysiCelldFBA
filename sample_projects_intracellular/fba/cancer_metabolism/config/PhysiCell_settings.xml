@@ -125,21 +125,21 @@
 	</options>
 	
 	<microenvironment_setup>
-		<variable name="oxygen" units="amol/fL" ID="0">
+		<variable name="oxygen" units="mM" ID="0">
 			<physical_parameter_set>
 				<diffusion_coefficient units="micron^2/min">100000.00</diffusion_coefficient>
 				<decay_rate units="1/min">.1</decay_rate>  
 			</physical_parameter_set>
-			<initial_condition units="amol/fL">20</initial_condition>
-			<Dirichlet_boundary_condition units="mM" enabled="true">0.285</Dirichlet_boundary_condition>
+			<initial_condition units="mM">2.3</initial_condition>
+			<Dirichlet_boundary_condition units="mM" enabled="true">2.3</Dirichlet_boundary_condition>
 		</variable>
-		<variable name="glucose" units="amol/fL" ID="1">
+		<variable name="glucose" units="mM" ID="1">
 			<physical_parameter_set>
 				<diffusion_coefficient units="micron^2/min">36000.00</diffusion_coefficient> <!-- https://bionumbers.hms.harvard.edu/bionumber.aspx?id=104089&ver=7   600 µm^2/sec--> 
 				<decay_rate units="1/min">.1</decay_rate>  
 			</physical_parameter_set>
-			<initial_condition units="amol/fL">10</initial_condition>
-			<Dirichlet_boundary_condition units="amol/fL" enabled="true">6.</Dirichlet_boundary_condition>
+			<initial_condition units="mM">10</initial_condition>
+			<Dirichlet_boundary_condition units="mM" enabled="true">6.</Dirichlet_boundary_condition>
 		</variable>
 		<variable name="lactate" units="mM" ID="2">
 			<physical_parameter_set>
@@ -251,18 +251,18 @@
 					<intracellular_dt>0.01</intracellular_dt>
 					<exchange substrate="glucose">
 						<fba_flux>R_E1</fba_flux>
-						<Km units="mM">0.2</Km>
-						<Vmax units="amol/pgDW cell/min">0.16</Vmax>
+						<Km units="mM">1.0</Km>
+						<Vmax units="mM/gDW/min">5.0</Vmax>
 					</exchange>
 					<exchange substrate="lactate">
 						<fba_flux>R_E2</fba_flux>
-						<Km units="mM">0.1</Km>
-						<Vmax units="amol/pgDW cell/min">0.1</Vmax>
+						<Km units="mM">1.0</Km>
+						<Vmax units="mM/gDW/min">5.0</Vmax>
 					</exchange>
 					<exchange substrate="oxygen">
 						<fba_flux>R_E3</fba_flux>
 						<Km units="mM">1</Km>
-						<Vmax units="amol/pgDW cell/min">1</Vmax>
+						<Vmax units="mM/gDW/min">18.0</Vmax>
 					</exchange>
 				</intracellular>
 			</phenotype>

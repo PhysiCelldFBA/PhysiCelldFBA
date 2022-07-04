@@ -43,12 +43,6 @@ struct ExchangeFluxData
 	KineticParam Vmax;
 };
 
-void update_dfba_inputs( PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt );
-
-void update_dfba_outputs( PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt );
-
-
-
 class dFBAIntracellular : public PhysiCell::Intracellular 
 {
  private:
