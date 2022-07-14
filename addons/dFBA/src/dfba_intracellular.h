@@ -47,7 +47,6 @@ class dFBAIntracellular : public PhysiCell::Intracellular
 {
  private:
  public:
-	
 
  	std::string sbml_filename;
 	double reference_volume = 1.0;
@@ -159,6 +158,10 @@ class dFBAIntracellular : public PhysiCell::Intracellular
 	}
 	
 	
+	int update_phenotype_parameters(PhysiCell::Phenotype& phenotype);
+	
+	bool has_variable(std::string name) { return true; }
+
 	// libroadrunner specifics
 	int validate_PhysiCell_tokens(PhysiCell::Phenotype& phenotype){ return true;}
 	int validate_SBML_species(){ return true;}
@@ -177,26 +180,9 @@ class dFBAIntracellular : public PhysiCell::Intracellular
 	void display(std::ostream&os) {}
 	static void save_dFBA(std::string path, std::string index);
 
-	void update_volume(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double growth_rate, double dt);
+	void *update_volume(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double growth_rate, double dt);
+
 	void standard_update_cell_volume(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double growth_rate, double dt);
-
-
-
-	// unneeded for this type
-
-    // ================  specific to "maboss" ================
-	bool has_variable(std::string name) { return false; }
-	bool get_boolean_variable_value(std::string name) { return false; }
-	void set_boolean_variable_value(std::string name, bool value) {	}
-	void print_current_nodes(){	}
-	
-
-    // ================  specific to "roadrunner" ================
-    int update_phenotype_parameters(PhysiCell::Phenotype& phenotype) {return 0; }
-    int validate_PhysiCell_tokens(PhysiCell::Phenotype& phenotype) {return 0; }
-    int validate_SBML_species() {return 0; }
-    int create_custom_data_for_SBML(PhysiCell::Phenotype& phenotype) {return 0; }
-
 };
 
 }

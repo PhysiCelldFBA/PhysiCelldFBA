@@ -7,13 +7,6 @@
 
 #include "dfba_Reaction.h"
 
-#include <iostream>
-#include <vector>
-#include <map>
-
-#include "FBA_metabolite.h"
-
-
 
 dFBAReaction::dFBAReaction(std::string id)
 {

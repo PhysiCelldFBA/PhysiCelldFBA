@@ -33,7 +33,7 @@ dFBAModel::~dFBAModel() {
 
 const ClpSimplex* dFBAModel::getLpModel() const
 {
-    return &this->lp_model;
+    return &this->problem;
 }
 
 const int dFBAModel::getNumReactions()
@@ -111,7 +111,7 @@ void dFBAModel::setReactionUpperBound(std::string rId, float upperBound)
     {
         rxn->setUpperBound(upperBound);
         int colIdx = this->reactionsIndexer[rId];
-        this->lp_model.setColumnUpper(colIdx, upperBound);
+        this->problem.setColumnUpper(colIdx, upperBound);
     }
 }
 
@@ -128,7 +128,7 @@ void dFBAModel::setReactionLowerBound(std::string rId, float lowerBound)
     {
         rxn->setLowerBound(lowerBound);
         int colIdx = this->reactionsIndexer[rId];
-        this->lp_model.setColumnLower(colIdx, lowerBound);
+        this->problem.setColumnLower(colIdx, lowerBound);
     }
 
 }
@@ -290,11 +290,10 @@ void dFBAModel::initProblem()
     int n_rows = this->getNumMetabolites();
     int n_cols = this->getNumReactions();
 
-    //this->lp_model = new ClpSimplex();
     handler = new CoinMessageHandler(nullptr);
     
     handler->setLogLevel(0);
-    lp_model.passInMessageHandler(handler);
+    problem.passInMessageHandler(handler);
 
     CoinPackedMatrix matrix;
     matrix.setDimensions(n_rows, 0);
@@ -329,8 +328,8 @@ void dFBAModel::initProblem()
         matrix.appendCol(col);
     }
 
-    this->lp_model.loadProblem(matrix, col_lb, col_ub, objective, row_lb, row_ub);
-    this->lp_model.setOptimizationDirection(-1);
+    this->problem.loadProblem(matrix, col_lb, col_ub, objective, row_lb, row_ub);
+    this->problem.setOptimizationDirection(-1);
 
     delete col_lb;
     delete col_ub;
@@ -349,15 +348,15 @@ void dFBAModel::initModel(const char* sbmlFileName)
 
 void dFBAModel::writeProblem(const char *filename)
 {
-    this->lp_model.writeMps(filename);
+    this->problem.writeLp(filename);
 }
 
 dFBASolution dFBAModel::optimize()
 {
-    std::cout << "Running FBA... ";
+    // std::cout << "Running FBA... ";
     
-    this->lp_model.primal();
-    if ( lp_model.isProvenOptimal() )
+    this->problem.primal();
+    if ( problem.isProvenOptimal() )
     {
         const double *columnPrimal = this->problem.getColSolution();
         std::map<std::string,float> fluxes;
@@ -379,9 +378,10 @@ dFBASolution dFBAModel::optimize()
         
         for(dFBAReaction* reaction: this->reactions)
         {
-            int idx = this->reactionsIndexer[reaction->getId()];
-            double v = columnPrimal[idx];
-            reaction->setFluxValue(v);
+            int column_idx = this->reactionsIndexer[reaction->getId()];
+            double flux = columnPrimal[column_idx];
+            fluxes[reaction->getId()] = flux;
+            reaction->setFluxValue(flux);
         }
 
         solution.objective_value = fopt;
@@ -392,7 +392,6 @@ dFBASolution dFBAModel::optimize()
     {
         for(dFBAReaction* reaction: this->reactions)
         { reaction->setFluxValue(0.0); }
-        std::cout << "Primal infeasible" << std::endl;
     }
     return solution;
 }
@@ -400,7 +399,7 @@ dFBASolution dFBAModel::optimize()
 bool dFBAModel::getSolutionStatus()
 {
     if (this->is_initialized)
-        return this->lp_model.isProvenOptimal();
+        return this->problem.isProvenOptimal();
     else
         return false;
 }
@@ -408,8 +407,8 @@ bool dFBAModel::getSolutionStatus()
 float dFBAModel::getObjectiveValue()
 {
     assert(this->is_initialized);
-    if (this->lp_model.isProvenOptimal())
-        return this->lp_model.getObjValue();
+    if (this->problem.isProvenOptimal())
+        return this->problem.getObjValue();
     else
         std::cout << "WARNING: Primal infeasible" << std::endl;
     return 0;

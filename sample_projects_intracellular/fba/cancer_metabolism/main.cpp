@@ -151,9 +151,9 @@ int main( int argc, char* argv[] )
 
 	// for simplicity, set a pathology coloring function 
 	
-	/*
-	std::vector<std::string> (*cell_coloring_function)(Cell*) = heterogeneity_coloring_function;
 	
+	std::vector<std::string> (*cell_coloring_function)(Cell*) = metabolic_coloring_function;
+	/*
 	sprintf( filename , "%s/initial.svg" , PhysiCell_settings.folder.c_str() ); 
 	SVG_plot( filename , microenvironment, 0.0 , PhysiCell_globals.current_time, cell_coloring_function );
 	
@@ -210,7 +210,7 @@ int main( int argc, char* argv[] )
 				if( PhysiCell_settings.enable_SVG_saves == true )
 				{	
 					sprintf( filename , "%s/snapshot%08u.svg" , PhysiCell_settings.folder.c_str() , PhysiCell_globals.SVG_output_index ); 
-					SVG_plot( filename , microenvironment, 0.0 , PhysiCell_globals.current_time, my_coloring_function );
+					SVG_plot( filename , microenvironment, 0.0 , PhysiCell_globals.current_time, cell_coloring_function );
 
 					PhysiCell_globals.SVG_output_index++; 
 					PhysiCell_globals.next_SVG_save_time  += PhysiCell_settings.SVG_save_interval;
@@ -220,9 +220,9 @@ int main( int argc, char* argv[] )
 			#pragma omp parallel for
 			for(int n=0; n < all_cells->size(); n++)
 			  {
-			    PhysiCell::Cell* pCell = (*all_cells)[n];
-				std::cout << "Updating " << pCell->ID << " dFBA model bounds" << std::endl;
-			    update_cell(pCell, pCell->phenotype, diffusion_dt);
+				// std::cout << "Updating " << pCell->ID << " dFBA model bounds" << std::endl;
+				PhysiCell::Cell* pCell = (*all_cells)[n];
+			    metabolic_cell_phenotype(pCell, pCell->phenotype, diffusion_dt);
 			  }
 			
 			// update the microenvironment

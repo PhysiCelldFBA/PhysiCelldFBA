@@ -57,9 +57,8 @@ PhysiCell_signal_behavior.o PhysiCell_rules.o
 PhysiCell_module_OBJECTS := PhysiCell_SVG.o PhysiCell_pathology.o PhysiCell_MultiCellDS.o PhysiCell_various_outputs.o \
 PhysiCell_pugixml.o PhysiCell_settings.o PhysiCell_geometry.o
 
-PhysiFBA_addon_OBJECTS := PhysiFBA_intracellular.o PhysiFBA_metabolite.o PhysiFBA_reaction.o PhysiFBA_model.o
+PhysiFBA_addon_OBJECTS := PhysiFBA_intracellular.o PhysiFBA_metabolite.o PhysiFBA_reaction.o PhysiFBA_model.o PhysiFBA_solution.o
 
-PCdFBA_OBJECTS := PhysiFBA_intracellular.o FBA_model.o FBA_reaction.o FBA_metabolite.o
 # put your custom objects here (they should be in the custom_modules directory)
 
 PhysiCell_custom_module_OBJECTS := cancer_metabolism.o
@@ -194,6 +193,9 @@ PhysiFBA_reaction.o: ./addons/dFBA/src/FBA_reaction.cpp
 
 PhysiFBA_metabolite.o: ./addons/dFBA/src/FBA_metabolite.cpp
 	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c ./addons/dFBA/src/FBA_metabolite.cpp -o ./PhysiFBA_metabolite.o
+
+PhysiFBA_solution.o: ./addons/dFBA/src/FBA_solution.cpp
+	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c ./addons/dFBA/src/FBA_solution.cpp -o ./PhysiFBA_solution.o
 
 # user-defined PhysiCell modules
 cancer_metabolism.o: ./custom_modules/cancer_metabolism.cpp
