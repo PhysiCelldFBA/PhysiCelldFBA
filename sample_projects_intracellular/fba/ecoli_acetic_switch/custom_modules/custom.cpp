@@ -95,66 +95,30 @@ void create_cell_types(void)
 
 
 
-void setup_microenvironment( void )
+void setup_microenvironment(void)
 {
 	initialize_microenvironment();
 	return;
 }
 
-
-void setup_tissue( void )
+void setup_tissue(void)
 {
-	// place a bacterial colony at the center 
+
 	double cell_radius = cell_defaults.phenotype.geometry.radius; 
-	double cell_spacing = 0.95 * 2.0 * cell_radius; 
-	double colony_radius = parameters.doubles("colony_radius");
-	
+	double colony_radius =  parameters.doubles("colony_radius");
+
+	std::vector<std::vector<double>> positions;
+	if (default_microenvironment_options.simulate_2D == true)
+		positions = create_cell_disc_positions(cell_radius,colony_radius); 
+	else
+		positions = create_cell_sphere_positions(cell_radius,colony_radius);
+
 	Cell* pCell = NULL; 
-	
-	double x = 0.0; 
-	double x_outer = colony_radius; 
-	double y = 0.0; 
-	
-	int n = 0; 
-	while( y < colony_radius )
+	for (int i = 0; i < positions.size(); i++)
 	{
-		x = 0.0; 
-		if( n % 2 == 1 )
-		{ x = 0.5*cell_spacing; }
-		x_outer = sqrt( colony_radius*colony_radius - y*y ); 
-		
-		while( x < x_outer )
-		{
-			pCell = create_cell(bacteria_cell);
-			pCell->assign_position( x , y , 0.0 );
-			
-			if( fabs( y ) > 0.01 )
-			{
-				pCell = create_cell(bacteria_cell);
-				pCell->assign_position( x , -y , 0.0 );
-				pCell->fba_model = FBA::FBA_default_model;			
-			}
-			
-			if( fabs( x ) > 0.01 )
-			{ 
-				pCell = create_cell(bacteria_cell);
-				pCell->assign_position( -x , y , 0.0 );
-				pCell->fba_model = FBA::FBA_default_model;			
-				if( fabs( y ) > 0.01 )
-				{
-					pCell = create_cell(bacteria_cell);
-					pCell->assign_position( -x , -y , 0.0 );
-					pCell->fba_model = FBA::FBA_default_model;			
-				}
-			}
-			x += cell_spacing; 
-			
-		}
-		
-		y += cell_spacing * sqrt(3.0)/2.0; 
-		n++; 
-	}
-	
+		pCell = create_cell(get_cell_definition("default"));
+		pCell->assign_position(positions[i]);
+	}	
 	return; 
 }
 
@@ -175,130 +139,15 @@ void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phe
 
 void update_cell(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt ){
 
-  phenotype.secretion.set_all_secretion_to_zero();
-  phenotype.secretion.set_all_uptake_to_zero();
-
-  std::string oxygen_name = "oxygen";
-  std::string glucose_name = "glucose";
-  std::string acetate_name = "acetate";
+	dFBAIntracellular *model = (dFBAIntracellular*) phenotype.intracellular;
+	model->update(pCell, phenotype, dt);
+	
+	if (phenotype.volume.total	>= 5000 ){
+		pCell->divide();
+	}
   
-  std::string oxygen_flux_id = FBA::exchange_flux_density_map[oxygen_name];
-  std::string glucose_flux_id = FBA::exchange_flux_density_map[glucose_name];
-  std::string acetate_flux_id = FBA::exchange_flux_density_map[acetate_name];
-
-  static int oxygen_idx = microenvironment.find_density_index( oxygen_name );
-  static int glucose_idx = microenvironment.find_density_index( glucose_name );
-  static int acetate_idx = microenvironment.find_density_index( acetate_name );
-
-  double oxygen_density = pCell->nearest_density_vector()[oxygen_idx];
-  double glucose_density = pCell->nearest_density_vector()[glucose_idx]; // dived by voxel size?
-  double acetate_density = pCell->nearest_density_vector()[acetate_idx]; // dived by voxel size?
-  
-  
-  double O2_Km = parameters.doubles("oxygen_Km");
-  double O2_Vmax = parameters.doubles("oxygen_Vmax");
-  double oxygen_flux_bound = -1 * ( O2_Vmax * oxygen_density) / (oxygen_density + O2_Km);
-  pCell->fba_model.setReactionLowerBound(oxygen_flux_id, oxygen_flux_bound);
-
-  double glc_Km = parameters.doubles("glucose_Km");
-  double glc_Vmax = parameters.doubles("glucose_Vmax");
-  double glucose_flux_bound = -1 * ( glc_Vmax * glucose_density) / (glucose_density + glc_Km);
-  pCell->fba_model.setReactionLowerBound(glucose_flux_id, glucose_flux_bound);
-
-  double lac_Km = parameters.doubles("acetate_Km");
-  double lac_Vmax = parameters.doubles("acetate_Vmax");
-  double acetate_flux_bound = -1 * ( lac_Vmax * acetate_density) / (acetate_density + lac_Km);
-  pCell->fba_model.setReactionLowerBound(acetate_flux_id, acetate_flux_bound);
-
-  std::cout << "Running FBA for cell: " << pCell->ID << std::endl;
-  pCell->fba_model.runFBA();
-
-  if ( pCell->fba_model.getSolutionStatus() )
-  {
-    FBA_reaction* reaction = pCell->fba_model.getReaction(oxygen_flux_id);
-    double oxygen_flux = reaction->getFluxValue();
-	std::cout << "Oxygen flux: " << oxygen_flux << std::endl;
-
-	reaction = pCell->fba_model.getReaction(glucose_flux_id);
-	double glucose_flux = reaction->getFluxValue();
-	std::cout << "glucose flux: " << glucose_flux << std::endl;
-
-	reaction = pCell->fba_model.getReaction(acetate_flux_id);
-	double acetate_flux = reaction->getFluxValue();
-	std::cout << "acetate flux: " << acetate_flux << std::endl;
-		
-	if ( oxygen_flux < 0)
-		phenotype.secretion.uptake_rates[oxygen_idx] = abs(oxygen_flux / oxygen_density);
-
-	if ( glucose_flux < 0)
-		phenotype.secretion.uptake_rates[glucose_idx] = abs(glucose_flux / glucose_density);
-
-	if ( acetate_flux < 0 )
-		phenotype.secretion.uptake_rates[acetate_idx] = abs(acetate_flux / acetate_density);
-			
-	else if ( acetate_flux > 0 )
-		phenotype.secretion.secretion_rates[acetate_idx] = abs(acetate_flux / acetate_density);
-		
-  }
-  else
-  {
-	// Check energy production to see is the cell is able
-	// to reach a threshold. Otherwise enter apoptosis
-
-  }
-
-
-    
-  
-
-
 }
 
-void setup_default_metabolic_model( void )
-{
-
-  // This codes is to use iSIM model
-  std::string sbml_fileame = parameters.strings("sbml_model");
-  
-  FBA::FBA_default_model.readSBMLModel(sbml_fileame.c_str());
-  FBA::FBA_default_model.initLpModel();
-
-  FBA::exchange_flux_density_map["glucose"] = "R_EX_glc__D_e";
-  FBA::exchange_flux_density_map["acetate"] = "R_EX_ac_e";
-  FBA::exchange_flux_density_map["oxygen"] = "R_EX_o2_e";
-  FBA::exchange_flux_density_map["growth_rate"] = "R_BIOMASS_Ecoli_core_w_GAM";
-
-}
-
-void anuclear_volume_model (Cell* pCell, Phenotype& phenotype, double dt)
-{
-	phenotype.volume.fluid += dt * phenotype.volume.fluid_change_rate * 
-		( phenotype.volume.target_fluid_fraction * phenotype.volume.total - phenotype.volume.fluid );
-		
-	// if the fluid volume is negative, set to zero
-	if( phenotype.volume.fluid < 0.0 )
-	{ phenotype.volume.fluid = 0.0; }
-	
-
-	phenotype.volume.cytoplasmic_solid += dt * phenotype.volume.cytoplasmic_biomass_change_rate * 
-		( phenotype.volume.target_solid_cytoplasmic - phenotype.volume.cytoplasmic_solid );	
-	
-	if( phenotype.volume.cytoplasmic_solid < 0.0 )
-	{ phenotype.volume.cytoplasmic_solid = 0.0; }
-	
-	phenotype.volume.solid = phenotype.volume.cytoplasmic_solid;
-	phenotype.volume.cytoplasmic = phenotype.volume.cytoplasmic_solid + phenotype.volume.cytoplasmic_fluid; 
-	
-	phenotype.volume.total = phenotype.volume.cytoplasmic;
-	
-	
-	phenotype.volume.fluid_fraction = phenotype.volume.fluid / 
-		( 1e-16 + phenotype.volume.total ); 
-   
-	phenotype.geometry.update( pCell,phenotype,dt );
-
-	return; 
-}
 
 void metabolic_cell_phenotype( Cell* pCell, Phenotype& phenotype, double dt )
 {
@@ -319,10 +168,87 @@ void metabolic_cell_phenotype( Cell* pCell, Phenotype& phenotype, double dt )
 }
 
 
+std::vector<std::vector<double>> create_cell_sphere_positions(double cell_radius, double sphere_radius)
+{
+	std::vector<std::vector<double>> cells;
+	int xc=0,yc=0,zc=0;
+	double x_spacing= cell_radius*sqrt(3);
+	double y_spacing= cell_radius*2;
+	double z_spacing= cell_radius*sqrt(3);
+	
+	std::vector<double> tempPoint(3,0.0);
+	// std::vector<double> cylinder_center(3,0.0);
+	
+	for(double z=-sphere_radius;z<sphere_radius;z+=z_spacing, zc++)
+	{
+		for(double x=-sphere_radius;x<sphere_radius;x+=x_spacing, xc++)
+		{
+			for(double y=-sphere_radius;y<sphere_radius;y+=y_spacing, yc++)
+			{
+				tempPoint[0]=x + (zc%2) * 0.5 * cell_radius;
+				tempPoint[1]=y + (xc%2) * cell_radius;
+				tempPoint[2]=z;
+				
+				if(sqrt(norm_squared(tempPoint))< sphere_radius)
+				{ cells.push_back(tempPoint); }
+			}
+			
+		}
+	}
+	return cells;
+	
+}
+
+
+std::vector<std::vector<double>> create_cell_disc_positions(double cell_radius, double disc_radius)
+{	 
+	double cell_spacing = 0.95 * 2.0 * cell_radius; 
+	
+	double x = 0.0; 
+	double y = 0.0; 
+	double x_outer = 0.0;
+
+	std::vector<std::vector<double>> positions;
+	std::vector<double> tempPoint(3,0.0);
+	
+	int n = 0; 
+	while( y < disc_radius )
+	{
+		x = 0.0; 
+		if( n % 2 == 1 )
+		{ x = 0.5 * cell_spacing; }
+		x_outer = sqrt( disc_radius*disc_radius - y*y ); 
+		
+		while( x < x_outer )
+		{
+			tempPoint[0]= x; tempPoint[1]= y;	tempPoint[2]= 0.0;
+			positions.push_back(tempPoint);			
+			if( fabs( y ) > 0.01 )
+			{
+				tempPoint[0]= x; tempPoint[1]= -y;	tempPoint[2]= 0.0;
+				positions.push_back(tempPoint);
+			}
+			if( fabs( x ) > 0.01 )
+			{ 
+				tempPoint[0]= -x; tempPoint[1]= y;	tempPoint[2]= 0.0;
+				positions.push_back(tempPoint);
+				if( fabs( y ) > 0.01 )
+				{
+					tempPoint[0]= -x; tempPoint[1]= -y;	tempPoint[2]= 0.0;
+					positions.push_back(tempPoint);
+				}
+			}
+			x += cell_spacing; 
+		}		
+		y += cell_spacing * sqrt(3.0)/2.0; 
+		n++; 
+	}
+	return positions;
+}
+
 
 std::vector<std::string> my_coloring_function( Cell* pCell )
 {
-	// start with flow cytometry coloring
 
 	std::vector<std::string> output = false_cell_coloring_cytometry(pCell);
 	output[0] = "red";
@@ -336,4 +262,45 @@ std::vector<std::string> my_coloring_function( Cell* pCell )
 	}
 
 	return output;
+}
+
+
+std::vector<std::string> metabolic_coloring_function( Cell* pCell )
+{
+	std::vector< std::string > output( 4, "black" ); 
+	
+	// if( pCell->type == 1 )
+	// { return output; } 
+	
+	// // live cells are green, but shaded by oncoprotein value 
+	// if( pCell->phenotype.death.dead == false )
+	// {
+	// 	int respiration = (int) round( (1.0/(o2_max-o2_min)) * (pCell->custom_data[oncoprotein_i]-p_min) * 255.0 ); 
+	// 	char szTempString [128];
+	// 	sprintf( szTempString , "rgb(%u,%u,%u)", oncoprotein, oncoprotein, 255-oncoprotein );
+	// 	output[0].assign( szTempString );
+	// 	output[1].assign( szTempString );
+
+	// 	sprintf( szTempString , "rgb(%u,%u,%u)", (int)round(output[0][0]/p_max) , (int)round(output[0][1]/p_max) , (int)round(output[0][2]/p_max) );
+	// 	output[2].assign( szTempString );
+		
+	// 	return output; 
+	// }
+
+	/*
+    if(value > 0.5){
+        value -= 0.5;
+        rgb[0] = 0;
+        rgb[1] = (int)((1-2*value)*255);
+        rgb[2] = (int)(2*value*255);
+    }
+    if(value <= 0.5){
+        rgb[0] = (int)((1-2*value)*255);
+        rgb[1] = (int)(2*value*255);
+        rgb[2] = 0;
+    }*/
+	
+	
+	
+	return output; 
 }
