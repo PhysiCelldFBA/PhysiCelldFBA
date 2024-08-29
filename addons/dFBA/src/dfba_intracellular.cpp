@@ -179,10 +179,6 @@ void dFBAIntracellular::initialize_intracellular_from_pugixml(pugi::xml_node& no
     }
 }
 
-void dFBAIntracellular::dFBAIntracellular::start()
-{
-    // return 0;
-}
 
 
 void dFBAIntracellular::start()
