@@ -1,9 +1,9 @@
 #include <iostream>
 #include <string>
 
-#include <coin-or/CoinPackedMatrix.hpp>
-#include <coin-or/CoinPackedVector.hpp>
-#include <coin-or/ClpSimplex.hpp>
+#include "../ext/coin-or/include/coin/CoinPackedMatrix.hpp"
+#include "../ext/coin-or/include/coin/CoinPackedVector.hpp"
+#include "../ext/coin-or/include/coin/ClpSimplex.hpp"
 
 using namespace std;
 
