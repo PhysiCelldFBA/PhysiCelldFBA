@@ -24,11 +24,22 @@ DEPS_CFLAGS := -I$(DEPS_DIR)/libsbml/include -I$(DEPS_DIR)/coin-or/include
 LD_PATH  := -L$(DEPS_DIR)/libsbml/lib -L$(DEPS_DIR)/coin-or/lib/
 LIBS     := -lClp-static -lCoinUtils-static -llapack -lsbml-static -lxml2 -lbz2 -lz
 
+## "linux-x64", "linux-x86", "win64", "win32", "osx"
+PKG_ARCH := linux-x64
+
 # if we're on Windows, we need to provide a (agreed upon) path to some of the dynamic libs
 ifeq ($(OS),Windows_NT)
 	WIN_LD_FLAG := -LC:\msys64\mingw64\bin
 else
 	WIN_LD_FLAG := 
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S),Darwin)
+		UNAME_P := $(shell uname -p)
+		var := $(shell which $(CC) | xargs file)
+		ifeq ($(lastword $(var)),arm64)
+		  CFLAGS := -march=$(ARCH) -O3 -fomit-frame-pointer -fopenmp -m64 -std=c++11
+		endif
+	endif
 endif
 
 COMPILE_COMMAND := $(CC) $(CFLAGS) $(DEPS_CFLAGS)
@@ -43,9 +54,9 @@ PhysiCell_signal_behavior.o PhysiCell_rules.o
 PhysiCell_module_OBJECTS := PhysiCell_SVG.o PhysiCell_pathology.o PhysiCell_MultiCellDS.o PhysiCell_various_outputs.o \
 PhysiCell_pugixml.o PhysiCell_settings.o  PhysiCell_geometry.o
 
-PhysiFBA_addon_OBJECTS := PhysiFBA_intracellular.o PhysiFBA_metabolite.o PhysiFBA_reaction.o PhysiFBA_model.o
+PhysiCelldFBA_addon_OBJECTS := dfba_Metabolite.o dfba_Reaction.o dfba_Solution.o dfba_Model.o dfba_intracellular.o
 
-PCdFBA_OBJECTS := PhysiFBA_intracellular.o FBA_model.o FBA_reaction.o FBA_metabolite.o
+
 # put your custom objects here (they should be in the custom_modules directory)
 
 PhysiCell_custom_module_OBJECTS := custom.o
@@ -53,7 +64,7 @@ PhysiCell_custom_module_OBJECTS := custom.o
 pugixml_OBJECTS := pugixml.o
 
 PhysiCell_OBJECTS := $(BioFVM_OBJECTS)  $(pugixml_OBJECTS) $(PhysiCell_core_OBJECTS) $(PhysiCell_module_OBJECTS)
-ALL_OBJECTS := $(PhysiCell_OBJECTS) $(PhysiFBA_addon_OBJECTS) $(PhysiCell_custom_module_OBJECTS)
+ALL_OBJECTS := $(PhysiCell_OBJECTS) $(PhysiCelldFBA_addon_OBJECTS) $(PhysiCell_custom_module_OBJECTS)
 
 
 # compile the project

@@ -268,21 +268,27 @@
 				<molecular />
 				<intracellular type="dfba">
 					<sbml_filename>./config/Ecoli_core.xml</sbml_filename>
-					<exchange substrate="glucose">
-						<fba_flux>R_EX_glc_D_e</fba_flux>
-						<Km units="mM">3</Km>
-						<Vmax units="fmol/pg DW cell/min">0.126</Vmax>
-					</exchange>
-					<exchange substrate="acetate">
-						<fba_flux>R_EX_ac_e</fba_flux>
-						<Km units="mM">11</Km>
-						<Vmax units="amol/pg DW cell/min">0.1</Vmax>
-					</exchange>
-					<exchange substrate="oxygen">
-						<fba_flux>R_EX_o2_e</fba_flux>
-						<Km units="mM">1</Km>
-						<Vmax units="amol/pgDW cell/min">1</Vmax>
-					</exchange>
+					<transport_model>
+						<exchange substrate="glucose">
+							<fba_flux>R_EX_glc_D_e</fba_flux>
+							<Km units="mM">3</Km>
+							<Vmax units="fmol/pg DW cell/min">0.126</Vmax>
+						</exchange>
+						<exchange substrate="acetate">
+							<fba_flux>R_EX_ac_e</fba_flux>
+							<Km units="mM">11</Km>
+							<Vmax units="amol/pg DW cell/min">0.1</Vmax>
+						</exchange>
+						<exchange substrate="oxygen">
+							<fba_flux>R_EX_o2_e</fba_flux>
+							<Km units="mM">1</Km>
+							<Vmax units="amol/pgDW cell/min">1</Vmax>
+						</exchange>
+					<transport_model/>
+					<growth_model>
+						<cell_density units="g/ml">1.04<cell_density/>
+						<max_growth_rate units="1/min">0.8<max_growth_rate>
+					</growth_model>
 				</intracellular>
 			</phenotype>
 			<custom_data>  

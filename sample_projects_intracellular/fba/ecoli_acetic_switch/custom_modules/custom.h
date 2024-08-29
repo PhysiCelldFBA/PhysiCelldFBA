@@ -65,9 +65,6 @@
 ###############################################################################
 */
 
-#include "../core/PhysiCell.h"
-#include "../modules/PhysiCell_standard_modules.h"
-#include "../addons/dFBA/src/dfba_intracellular.h"
 
 
 
@@ -116,3 +113,5 @@ std::vector<std::vector<double>> create_cell_sphere_positions(double cell_radius
 
 // helper function to create a disc of cells of a given radius
 std::vector<std::vector<double>> create_cell_disc_positions(double cell_radius, double disc_radius);
+
+#endif
