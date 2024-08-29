@@ -14,8 +14,11 @@ heterogeneity
 initial.svg
 interaction_demo
 Makefile-backup
-pmb_debug.log
-project
-studio_debug.log
-user_projects/*
-!user_projects/empty.txt
+
+*.exe
+
+addons/dFBA/ext/*
+addons/dFBA/test/*.o
+addons/dFBA/test/test_*
+
+.venv
