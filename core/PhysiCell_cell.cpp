@@ -3113,7 +3113,7 @@ Cell_Definition* initialize_cell_definition_from_pugixml( pugi::xml_node cd_node
 				pCD->phenotype.intracellular->initialize_intracellular_from_pugixml(node);
 			// Otherwise we need to create a new one
 			} else {
-				dFBAIntracellular* pIntra = new dFBAIntracellular(node);
+				PhysiCelldFBA::dFBAIntracellular* pIntra = new PhysiCelldFBA::dFBAIntracellular(node);
 				pCD->phenotype.intracellular = pIntra->getIntracellularModel();
 			}
 		}
