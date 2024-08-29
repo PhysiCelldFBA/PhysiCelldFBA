@@ -1,5 +1,5 @@
 /*
- * Reaction.h
+ * dfba_Reaction.h
  *
  *  Created on: 13 jun. 2019
  *      Author: mponce
@@ -12,9 +12,9 @@
 #include <vector>
 #include <map>
 
-#include "FBA_metabolite.h"
+#include "dfba_Metabolite.h"
 
-class FBA_reaction
+class dFBAReaction
 {
 	private:
 		std::string id;
@@ -25,12 +25,12 @@ class FBA_reaction
 		double objectiveCoefficient;
 		double fluxValue;
 
-		std::map<const FBA_metabolite*, double> metabolites;
-		std::map<std::string, const FBA_metabolite*> idMetaboliteMap;
+		std::map<const dFBAMetabolite*, double> metabolites;
+		std::map<std::string, const dFBAMetabolite*> idMetaboliteMap;
 
 	public:
-		FBA_reaction(std::string id);
-		~FBA_reaction();
+		dFBAReaction(std::string id);
+		~dFBAReaction();
 
 		const std::string& getId() const;
 
@@ -53,7 +53,7 @@ class FBA_reaction
 
 		bool reversible();
 		bool hasMetabolite(std::string mId);
-		void addMetabolite(const FBA_metabolite* met, double stoich);
+		void addMetabolite(const dFBAMetabolite* met, double stoich);
 
 		std::vector<std::string> getReactants();
 		std::vector<std::string> getProducts();
@@ -61,7 +61,7 @@ class FBA_reaction
 
 		std::string getReactionString();
 
-		const std::map<const FBA_metabolite*, double>& getMetabolites() const;
+		const std::map<const dFBAMetabolite*, double>& getMetabolites() const;
 };
 
 
