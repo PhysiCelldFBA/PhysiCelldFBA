@@ -86,7 +86,7 @@ PhysiCelldFBA_addon_OBJECTS := dfba_Metabolite.o dfba_Reaction.o dfba_Solution.o
 
 # put your custom objects here (they should be in the custom_modules directory)
 
-PhysiCell_custom_module_OBJECTS := cutom.o
+PhysiCell_custom_module_OBJECTS := custom.o
 
 pugixml_OBJECTS := pugixml.o
 
@@ -205,24 +205,24 @@ libFBA:
 	python3 ../../../beta/setup_fba.py --pkg libsbml --arch $(PKG_ARCH)
 	python3 ../../../beta/setup_fba.py --pkg coin-or --arch $(PKG_ARCH)
 
-dfba_intracellular.o: ../src/dfba_intracellular.cpp
-	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c ../src/dfba_intracellular.cpp -o ./dfba_intracellular.o
+dfba_intracellular.o: addons/dFBA/src/dfba_intracellular.cpp
+	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c addons/dFBA/src/dfba_intracellular.cpp -o ./dfba_intracellular.o
 
-dfba_Model.o: ../src/dfba_Model.cpp
-	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c ../src/dfba_Model.cpp -o ./dfba_Model.o
+dfba_Model.o: addons/dFBA/src/dfba_Model.cpp
+	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c addons/dFBA/src/dfba_Model.cpp -o ./dfba_Model.o
 
-dfba_Reaction.o: ../src/dfba_Reaction.cpp
-	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c ../src/dfba_Reaction.cpp -o ./dfba_Reaction.o
+dfba_Reaction.o: addons/dFBA/src/dfba_Reaction.cpp
+	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c addons/dFBA/src/dfba_Reaction.cpp -o ./dfba_Reaction.o
 
-dfba_Metabolite.o: ../src/dfba_Metabolite.cpp
-	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c ../src/dfba_Metabolite.cpp -o ./dfba_Metabolite.o
+dfba_Metabolite.o: addons/dFBA/src/dfba_Metabolite.cpp
+	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c addons/dFBA/src/dfba_Metabolite.cpp -o ./dfba_Metabolite.o
 
-dfba_Solution.o: ../src/dfba_Solution.cpp
-	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c ../src/dfba_Solution.cpp -o ./dfba_Solution.o
+dfba_Solution.o: addons/dFBA/src/dfba_Solution.cpp
+	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c addons/dFBA/src/dfba_Solution.cpp -o ./dfba_Solution.o
 
 # user-defined PhysiCell modules
-cutom.o: ./custom_modules/cutom.cpp
-	$(COMPILE_COMMAND) -c ./custom_modules/cutom.cpp
+custom.o: ./custom_modules/custom.cpp
+	$(COMPILE_COMMAND) -c ./custom_modules/custom.cpp
 
 
 # cleanup
