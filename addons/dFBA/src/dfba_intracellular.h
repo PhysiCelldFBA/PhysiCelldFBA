@@ -76,6 +76,27 @@ class dFBAIntracellular : public PhysiCell::Intracellular
 	/** \brief map between density IDs and exchange reactions */
 	std::map<std::string, ExchangeFluxData> substrate_exchanges;
 
+ 	std::string sbml_filename;
+	double reference_volume = 1.0;
+	double cell_density = 1.04;
+	double max_growth_rate = 0;
+	double current_growth_rate = 0;
+	double next_dfba_run = 0;
+	dFBAModel model;
+
+	ClpSimplex problem;
+	CoinMessageHandler* handler;
+	bool is_initialized = false;
+
+	/** \brief map between metabolites' ids and metabolites' references **/
+	std::map<std::string, int> metaboliteIndexer;
+
+	/** \brief map between reaction IDs and reaction references */
+	std::map< std::string, int> reactionsIndexer;
+
+	/** \brief map between density IDs and exchange reactions */
+	std::map<std::string, ExchangeFluxData> substrate_exchanges;
+
     dFBAIntracellular();
 
 	dFBAIntracellular(pugi::xml_node& node);
@@ -147,6 +168,10 @@ class dFBAIntracellular : public PhysiCell::Intracellular
 	// libroadrunner specifics
 		
 	// for now, define dummy methods for these in the abstract parent class
+	
+	// This function initialize the model, needs to be called on each cell once created
+	void start();
+	
 	
 	// This function initialize the model, needs to be called on each cell once created
 	void start();
