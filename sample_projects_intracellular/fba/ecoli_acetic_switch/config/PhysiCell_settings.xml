@@ -96,10 +96,6 @@
 		<dt_phenotype units="min">6</dt_phenotype>	
 	</overall>
 	
-	<options>
-		<disable_automated_spring_adhesions>false</disable_automated_spring_adhesions>
-	</options>
-
 	<parallel>
 		<omp_num_threads>4</omp_num_threads>
 	</parallel> 
@@ -113,7 +109,7 @@
 		</full_data>
 		
 		<SVG>
-			<interval units="min">30</interval>
+			<interval units="min">15</interval>
 			<enable>true</enable>
 		</SVG>
 		
@@ -123,8 +119,9 @@
 	</save>
 	
 	<options>
-		<legacy_random_points_on_sphere_in_divide>false</legacy_random_points_on_sphere_in_divide>
-	</options>	
+		<virtual_wall_at_domain_edge>true</virtual_wall_at_domain_edge>
+		<disable_automated_spring_adhesions>false</disable_automated_spring_adhesions>
+	</options>
 	
 	<microenvironment_setup>
 		<variable name="oxygen" units="mmHg" ID="0">
@@ -284,16 +281,13 @@
 							<Km units="mM">1</Km>
 							<Vmax units="amol/pgDW cell/min">1</Vmax>
 						</exchange>
-					<transport_model/>
+					</transport_model>
 					<growth_model>
-						<cell_density units="g/ml">1.04<cell_density/>
-						<max_growth_rate units="1/min">0.8<max_growth_rate>
+						<cell_density units="g/ml">1.04</cell_density>
+						<max_growth_rate units="1/min">0.8</max_growth_rate>
 					</growth_model>
 				</intracellular>
 			</phenotype>
-			<custom_data>  
-				<oncoprotein units="dimensionless">1.0</oncoprotein>
-			</custom_data>
 		</cell_definition>
 	</cell_definitions>	
 	
