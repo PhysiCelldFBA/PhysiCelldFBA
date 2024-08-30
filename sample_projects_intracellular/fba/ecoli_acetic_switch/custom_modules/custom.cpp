@@ -66,6 +66,7 @@
 */
 
 #include "custom.h"
+//#include "../addons/dFBA/src/dfba_intracellular.h"
 
 
 void create_cell_types(void)
@@ -81,7 +82,6 @@ void create_cell_types(void)
 	cell_defaults.functions.pre_update_intracellular =  pre_update_intracellular;
 	cell_defaults.functions.post_update_intracellular = post_update_intracellular;
 	cell_defaults.functions.update_phenotype = NULL; 
-	
 
 	build_cell_definitions_maps();
 	
@@ -123,25 +123,19 @@ void setup_tissue(void)
 }
 
 void pre_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt ){
-	PhysiCelldFBA::update_dfba_inputs( pCell, phenotype, dt );
-	PhysiCelldFBA::
+	//PhysiCelldFBA::update_dfba_inputs( pCell, phenotype, dt );
 	return;
 }
 
 
 void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt ){
-	PhysiCelldFBA::update_dfba_outputs( pCell, phenotype, dt );
+	//PhysiCelldFBA::update_dfba_outputs( pCell, phenotype, dt );
 	return;
 }
 
 
-
-
 void update_cell(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt ){
 
-	dFBAIntracellular *model = (dFBAIntracellular*) phenotype.intracellular;
-	model->update(pCell, phenotype, dt);
-	
 	if (phenotype.volume.total	>= 5000 ){
 		pCell->divide();
 	}
