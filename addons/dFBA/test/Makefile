@@ -8,7 +8,7 @@ endif
 ARCH := native # best auto-tuning
 
 # For debugging with gdb just add: -g3 -ggdb -O3
-CFLAGS      := -march=$(ARCH) -O3 -fomit-frame-pointer -mfpmath=both -fopenmp -m64 -std=c++11 -pipe
+CFLAGS      := -march=$(ARCH) -O3 -fomit-frame-pointer -mfpmath=both -fopenmp -m64 -std=c++11
 
 # Libraries need: SBML and coin-Clp
 DEPS_DIR    := ../ext
@@ -45,8 +45,8 @@ vpath %.o     $(SRC_DIR)
 vpath %.cpp   $(SRC_DIR) 
 vpath %.h     $(SRC_DIR) 
 
-ALL_OBJECTS := dfba_Metabolite.o dfba_Reaction.o dfba_Solution.o dfba_Model.o dfba_intracellular.o
-# ALL_OBJECTS := dfba_Metabolite.o dfba_Reaction.o dfba_Solution.o dfba_Model.o 
+# ALL_OBJECTS := dfba_Metabolite.o dfba_Reaction.o dfba_Solution.o dfba_Model.o dfba_intracellular.o
+ALL_OBJECTS := dfba_Metabolite.o dfba_Reaction.o dfba_Solution.o dfba_Model.o 
 
 make_lib: libFBA $(ALL_OBJECTS)
 all: make_lib test_sbml test_clp test_fba
