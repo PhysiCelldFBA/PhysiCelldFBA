@@ -80,6 +80,16 @@ class dFBAIntracellular : public PhysiCell::Intracellular
 	dFBAIntracellular(pugi::xml_node& node);
 	
 	dFBAIntracellular(dFBAIntracellular* copy);
+
+		// rwh: review this
+	Intracellular* clone(){
+		return static_cast<Intracellular*>(new dFBAIntracellular(this));
+	}
+
+	Intracellular* getIntracellularModel() 
+	{
+		return static_cast<Intracellular*>(this);
+	}
 	
     // ================  generic  ================
 	// This function parse the xml cell definition
@@ -105,42 +115,17 @@ class dFBAIntracellular : public PhysiCell::Intracellular
 	
 //	~Intracellular();
 	
-	// rwh: review this
-	Intracellular* clone()
-    {
-		dFBAIntracellular* clone = new dFBAIntracellular(this);
-		clone->sbml_filename = this->sbml_filename;
-		clone->substrate_exchanges = this->substrate_exchanges;
-		return static_cast<Intracellular*>(clone);
-	}
 
-	Intracellular* getIntracellularModel() 
-	{
-		return static_cast<Intracellular*>(this);
-	}
 	
 	int parse_transport_model(pugi::xml_node& node);
 	void parse_growth_model(pugi::xml_node& node);
 	void initLpSolver();
 
-	
-	
-	void update(){
-    	// STEP 1. 
-		// date exchange fluxes lower bound using concentration values of the 
-		// corresponding densities at the agent voxel
-
-    	// STEP 2. 
-		// Run FBA and retrive the solution
-    	dFBASolution solution = this->model.optimize();
-		this->current_growth_rate = solution.getObjectiveValue();
-		this->next_dfba_run += PhysiCell::diffusion_dt;
-
-    	// STEP 3. Update the cell volumne using the growth rate from FBA
-    	// STEP 4. rescale exchange fluxes from the dfba model and use them to update the net_export_rates
-        // STEP 5. remove the internalized substrates if needed
-    
-	}
+		
+	void update();
+	void update(PhysiCell::Cell* cell, PhysiCell::Phenotype& phenotype, double dt){
+		return;
+	};
 	
 	
 	// libroadrunner specifics

@@ -23,8 +23,7 @@ dFBAIntracellular::dFBAIntracellular(dFBAIntracellular* copy)
     this->max_growth_rate = copy->max_growth_rate;
     this->current_growth_rate = copy->current_growth_rate;
     this->next_dfba_run = copy->next_dfba_run;
-    //this->model = new dFBAModel();
-    this->model.initModel(this->sbml_filename.c_str());
+//    this->model.initModel(this->sbml_filename.c_str());
 }
 
 
@@ -252,6 +251,24 @@ void dFBAIntracellular::start()
     delete objective;
 
     this->is_initialized = true;
+}
+
+
+void dFBAIntracellular::update(){
+    // STEP 1. 
+    // date exchange fluxes lower bound using concentration values of the 
+    // corresponding densities at the agent voxel
+
+    // STEP 2. 
+    // Run FBA and retrive the solution
+    dFBASolution solution = this->model.optimize();
+    this->current_growth_rate = solution.getObjectiveValue();
+    this->next_dfba_run += PhysiCell::diffusion_dt;
+
+    // STEP 3. Update the cell volumne using the growth rate from FBA
+    // STEP 4. rescale exchange fluxes from the dfba model and use them to update the net_export_rates
+    // STEP 5. remove the internalized substrates if needed
+
 }
 
 
