@@ -247,7 +247,7 @@ physiboss-tutorial-invasion:
 ecoli-acetic-switch-sample:
 	cp ./sample_projects_intracellular/fba/ecoli_acetic_switch/custom_modules/* ./custom_modules/
 	touch main.cpp && cp main.cpp main-backup.cpp
-	cp ./sample_projects_intracellular/fba/ecoli_acetic_switch/main_ecoli_acetic_switch.cpp ./main.cpp
+	cp ./sample_projects_intracellular/fba/ecoli_acetic_switch/main.cpp ./main.cpp
 	cp Makefile Makefile-backup
 	cp ./sample_projects_intracellular/fba/ecoli_acetic_switch/Makefile ./
 	cp ./config/PhysiCell_settings.xml ./config/PhysiCell_settings-backup.xml

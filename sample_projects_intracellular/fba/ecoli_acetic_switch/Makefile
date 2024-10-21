@@ -191,9 +191,9 @@ PhysiCell_geometry.o: ./modules/PhysiCell_geometry.cpp
 
 # PhysiFBA addon modules
 libFBA: 
-	python3 beta/setup_fba.py --pkg libsbml --arch $(PKG_ARCH)
-	python3 beta/setup_fba.py --pkg coin-or --arch $(PKG_ARCH)
-
+	python3 beta/setup_fba.py 
+	python3 beta/setup_fba.py
+	
 dfba_intracellular.o: addons/dFBA/src/dfba_intracellular.cpp
 	$(COMPILE_COMMAND) $(INC) $(LIB) -c addons/dFBA/src/dfba_intracellular.cpp
 
