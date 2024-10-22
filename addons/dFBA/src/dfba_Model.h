@@ -88,16 +88,16 @@ class dFBAModel
 		const int getReactionIndex(std::string rId);
 		
 		/** \brief Get the upper bound of a reactions*/
-		float getReactionUpperBound(std::string rId);
+		double getReactionUpperBound(std::string rId);
 		
 		/** \brief Set the upper bound of a reactions*/
-		void setReactionUpperBound(std::string rId, float upperBound);
+		void setReactionUpperBound(std::string rId, double upperBound);
 		
 		/** \brief Get the upper bound of a reactions*/
-		float getReactionLowerBound(std::string rId);
+		double getReactionLowerBound(std::string rId);
 		
 		/** \brief Set the lower bound of a reactions*/
-		void setReactionLowerBound(std::string rId, float lowerBound);
+		void setReactionLowerBound(std::string rId, double lowerBound);
 
 		/** \brief Get the number of model reactions*/
 		const int getNumReactions();
@@ -142,7 +142,7 @@ class dFBAModel
 		bool getSolutionStatus();
 
 		/** \brief Get objective value */
-		float getObjectiveValue();
+		double getObjectiveValue();
 
 		dFBASolution getSolution(){ return this->solution; }
 };

@@ -79,9 +79,10 @@ void create_cell_types(void)
 	initialize_cell_definitions_from_pugixml();
 
 	//  This sets the pre and post intracellular update functions
-	cell_defaults.functions.pre_update_intracellular =  pre_update_intracellular;
-	cell_defaults.functions.post_update_intracellular = post_update_intracellular;
+	cell_defaults.functions.pre_update_intracellular =  NULL;
+	cell_defaults.functions.post_update_intracellular = NULL;
 	cell_defaults.functions.update_phenotype = NULL; 
+	cell_defaults.functions.volume_update_function = NULL;
 
 	build_cell_definitions_maps();
 	
@@ -104,62 +105,27 @@ void setup_microenvironment(void)
 void setup_tissue(void)
 {
 
-	double cell_radius = cell_defaults.phenotype.geometry.radius; 
-	double colony_radius =  parameters.doubles("colony_radius");
+	// double cell_radius = cell_defaults.phenotype.geometry.radius; 
+	// double colony_radius =  parameters.doubles("colony_radius");
 
-	std::vector<std::vector<double>> positions;
-	if (default_microenvironment_options.simulate_2D == true)
-		positions = create_cell_disc_positions(cell_radius,colony_radius); 
-	else
-		positions = create_cell_sphere_positions(cell_radius,colony_radius);
+	// std::vector<std::vector<double>> positions;
+	// if (default_microenvironment_options.simulate_2D == true)
+	// 	positions = create_cell_disc_positions(cell_radius,colony_radius); 
+	// else
+	// 	positions = create_cell_sphere_positions(cell_radius,colony_radius);
 
-	Cell* pCell = NULL; 
-	for (int i = 0; i < positions.size(); i++)
-	{
-		pCell = create_cell(get_cell_definition("default"));
-		pCell->assign_position(positions[i]);
-	}	
+	Cell* pCell = create_cell(get_cell_definition("default"));
+	std::vector<double> pos(3, 0.0);
+	pCell->assign_position(pos);
+	// for (int i = 0; i < positions.size(); i++)
+	// {
+	// 	pCell = create_cell(get_cell_definition("default"));
+	// 	pCell->assign_position(positions[i]);
+	// }	
 	return; 
 }
 
-void pre_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt ){
-	//PhysiCelldFBA::update_dfba_inputs( pCell, phenotype, dt );
-	return;
-}
 
-
-void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt ){
-	//PhysiCelldFBA::update_dfba_outputs( pCell, phenotype, dt );
-	return;
-}
-
-
-void update_cell(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt ){
-
-	if (phenotype.volume.total	>= 5000 ){
-		pCell->divide();
-	}
-  
-}
-
-
-void metabolic_cell_phenotype( Cell* pCell, Phenotype& phenotype, double dt )
-{
-	// if cell is dead, don't bother with future phenotype changes.
-	if( phenotype.death.dead == true )
-	{
-		pCell->functions.update_phenotype = NULL;
-		return;
-	}
-
-	// update the transition rate according to growth rate?
-	static int cycle_start_index = live.find_phase_index( PhysiCell_constants::live );
-	static int cycle_end_index = live.find_phase_index( PhysiCell_constants::live );
-
-	//static int oncoprotein_i = pCell->custom_data.find_variable_index( "oncoprotein" );
-	//phenotype.cycle.data.transition_rate( cycle_start_index ,cycle_end_index ) *= pCell->custom_data[oncoprotein_i] ;
-	return;
-}
 
 
 std::vector<std::vector<double>> create_cell_sphere_positions(double cell_radius, double sphere_radius)
@@ -244,10 +210,7 @@ std::vector<std::vector<double>> create_cell_disc_positions(double cell_radius, 
 std::vector<std::string> my_coloring_function( Cell* pCell )
 {
 
-	std::vector<std::string> output = false_cell_coloring_cytometry(pCell);
-	output[0] = "red";
-	output[1] = "red";
-	output[2] = "red";
+	std::vector<std::string> output(4, "red");
 
 	if( pCell->phenotype.death.dead == false && pCell->type == 1 )
 	{

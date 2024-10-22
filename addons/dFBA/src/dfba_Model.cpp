@@ -24,7 +24,7 @@ dFBAModel::~dFBAModel() {
     for(dFBAReaction* rxn: this->reactions)
         delete rxn;
 
-        for(dFBAMetabolite* met: this->metabolites)
+    for(dFBAMetabolite* met: this->metabolites)
         delete met;
 
     if (this->handler != NULL)
@@ -98,13 +98,13 @@ dFBAReaction* dFBAModel::getReaction(std::string rId)
 }
 
 
-float dFBAModel::getReactionUpperBound(std::string rId) 
+double dFBAModel::getReactionUpperBound(std::string rId) 
 {
     dFBAReaction* rxn = this->getReaction(rId);
     return rxn->getUpperBound();
 }
 
-void dFBAModel::setReactionUpperBound(std::string rId, float upperBound)
+void dFBAModel::setReactionUpperBound(std::string rId, double upperBound)
 {
     dFBAReaction* rxn = this->getReaction(rId);
     if (rxn)
@@ -115,13 +115,13 @@ void dFBAModel::setReactionUpperBound(std::string rId, float upperBound)
     }
 }
 
-float dFBAModel::getReactionLowerBound(std::string rId) 
+double dFBAModel::getReactionLowerBound(std::string rId) 
 {
     dFBAReaction* rxn = this->getReaction(rId);
     return rxn->getLowerBound();
 }
 
-void dFBAModel::setReactionLowerBound(std::string rId, float lowerBound)
+void dFBAModel::setReactionLowerBound(std::string rId, double lowerBound)
 {
     dFBAReaction* rxn = this->getReaction(rId);
     if (rxn)
@@ -286,12 +286,11 @@ void dFBAModel::readSBMLModel(const char* sbmlFileName)
 
 void dFBAModel::initProblem()
 {
-
     int n_rows = this->getNumMetabolites();
     int n_cols = this->getNumReactions();
 
     handler = new CoinMessageHandler(nullptr);
-    
+    std::cout << "Initilizing LP problem n=" << n_rows << std::endl;
     handler->setLogLevel(0);
     problem.passInMessageHandler(handler);
 
@@ -331,11 +330,11 @@ void dFBAModel::initProblem()
     this->problem.loadProblem(matrix, col_lb, col_ub, objective, row_lb, row_ub);
     this->problem.setOptimizationDirection(-1);
 
-    delete col_lb;
-    delete col_ub;
-    delete row_lb;
-    delete row_ub;
-    delete objective;
+    delete[] col_lb;
+    delete[] col_ub;
+    delete[] row_lb;
+    delete[] row_ub;
+    delete[] objective;
 
     this->is_initialized = true;
 }
@@ -343,6 +342,7 @@ void dFBAModel::initProblem()
 void dFBAModel::initModel(const char* sbmlFileName)
 {
     this->readSBMLModel(sbmlFileName);
+    std::cout << "SBML model correctly loeaded: " << sbmlFileName << std::endl;
     this->initProblem();
 }
 
@@ -353,14 +353,18 @@ void dFBAModel::writeProblem(const char *filename)
 
 dFBASolution dFBAModel::optimize()
 {
-    // std::cout << "Running FBA... ";
-    
+    std::cout << "Running FBA... " << std::endl;
+    std::cout << "Status before " << this->problem.statusOfProblem() << std::endl;
+    this->problem.initialSolve();
     this->problem.primal();
+    std::cout << "Status after running " << this->problem.statusOfProblem() << std::endl;
+    std::cout << "Before checking... " << std::endl;
     if ( problem.isProvenOptimal() )
     {
+        std::cout << "Optimal solution found... ";
         const double *columnPrimal = this->problem.getColSolution();
-        std::map<std::string,float> fluxes;
-        std::map<std::string,float> reduced_costs;
+        std::map<std::string,double> fluxes;
+        std::map<std::string,double> reduced_costs;
 
         std::string status;
 
@@ -390,6 +394,7 @@ dFBASolution dFBAModel::optimize()
     }
     else
     {
+        std::cout << "huston... ";
         for(dFBAReaction* reaction: this->reactions)
         { reaction->setFluxValue(0.0); }
     }
@@ -404,7 +409,7 @@ bool dFBAModel::getSolutionStatus()
         return false;
 }
 
-float dFBAModel::getObjectiveValue()
+double dFBAModel::getObjectiveValue()
 {
     assert(this->is_initialized);
     if (this->problem.isProvenOptimal())

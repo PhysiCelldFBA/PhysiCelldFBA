@@ -285,6 +285,7 @@
 					<growth_model>
 						<cell_density units="g/ml">1.04</cell_density>
 						<max_growth_rate units="1/min">0.8</max_growth_rate>
+						<objective_reaction>R_BIOMASS_Ecoli_core_w_GAM</objective_reaction>
 					</growth_model>
 				</intracellular>
 			</phenotype>

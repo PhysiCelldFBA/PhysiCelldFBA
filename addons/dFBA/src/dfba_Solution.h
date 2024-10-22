@@ -21,18 +21,18 @@ class dFBASolution
 
     public:
 
-        float objective_value;
+        double objective_value;
         std::string status;
-        std::map<std::string, float> fluxes;
-        std::map<std::string, float> reduced_costs;
+        std::map<std::string, double> fluxes;
+        std::map<std::string, double> reduced_costs;
 
         dFBASolution();
-        dFBASolution(float objective_value, std::string status, std::map<std::string,float> fluxes);
+        dFBASolution(double objective_value, std::string status, std::map<std::string,double> fluxes);
         ~dFBASolution();
 
-        float getObjectiveValue(){ return this->objective_value; }
+        double getObjectiveValue(){ return this->objective_value; }
         std::string getStatus(){ return this->status; };
-        std::map<std::string, float> getFluxes(){ return fluxes; };
+        std::map<std::string, double> getFluxes(){ return fluxes; };
 
 };
 

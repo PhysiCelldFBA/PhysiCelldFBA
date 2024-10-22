@@ -18,7 +18,7 @@ dFBASolution::dFBASolution()
     this->status = "none";
 }
 
-dFBASolution::dFBASolution(float objective_value, std::string status, std::map<std::string,float> fluxes)
+dFBASolution::dFBASolution(double objective_value, std::string status, std::map<std::string,double> fluxes)
 {
     this->objective_value = objective_value;
     this->status = status;
