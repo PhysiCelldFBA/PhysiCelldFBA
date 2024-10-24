@@ -11,8 +11,12 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <set>
 
 #include "dfba_Metabolite.h"
+
+// Forward declaration of dFBAModel
+class dFBAModel;
 
 class dFBAReaction
 {

@@ -21,12 +21,12 @@
 #include <coin/ClpSimplex.hpp>
 
 #include "dfba_Metabolite.h"
-#include "dfba_Reaction.h"
 #include "dfba_Solution.h"
 
 LIBSBML_CPP_NAMESPACE_USE
 
-
+// Forward declaration of dFBAReaction
+class dFBAReaction;
 
 class dFBAModel
 {

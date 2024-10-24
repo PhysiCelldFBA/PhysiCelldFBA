@@ -6,7 +6,7 @@
  */
 
 #include "dfba_Reaction.h"
-
+#include "dfba_Model.h"  // Include the full definition
 
 dFBAReaction::dFBAReaction(std::string id)
 {
@@ -18,10 +18,24 @@ dFBAReaction::dFBAReaction(std::string id)
     this->fluxValue = 0;
 }
 
-dFBAReaction::~dFBAReaction()
-{
-
+dFBAReaction::~dFBAReaction() {
 }
+
+
+
+dFBAReaction::dFBAReaction(const dFBAReaction& copy) {
+    // Copy primitive members
+    this->id = copy.id;
+    this->name = copy.name;
+    this->lowerBound = copy.lowerBound;
+    this->upperBound = copy.upperBound;
+    this->objectiveCoefficient = copy.objectiveCoefficient;
+    this->fluxValue = copy.fluxValue;
+    this->metabolites = copy.metabolites;
+}
+
+
+
 
 const std::string & dFBAReaction::getId() const
 {
