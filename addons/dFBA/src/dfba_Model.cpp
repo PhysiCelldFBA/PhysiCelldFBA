@@ -301,7 +301,22 @@ void dFBAModel::readSBMLModel(const char* sbmlFileName)
 {
     SBMLReader reader;
     SBMLDocument* document = reader.readSBML(sbmlFileName);
+
+    // Check if the document was successfully read
+    if (document == nullptr || document->getNumErrors() > 0) {
+        std::cerr << "Error reading SBML file: " << sbmlFileName << std::endl;
+        delete document;
+        return;
+    }
+
     Model* model = document->getModel();
+
+    // Check if the model was successfully retrieved
+    if (model == nullptr) {
+        std::cerr << "Error: Model is null in SBML file: " << sbmlFileName << std::endl;
+        delete document;
+        return;
+    }
 
     ListOfSpecies* listOfSpecies = model->getListOfSpecies();
     ListOfReactions* listOfReactions = model->getListOfReactions();
@@ -572,7 +587,7 @@ dFBASolution dFBAModel::optimize()
     }
     else
     {
-        std::cout << "huston... ";
+        std::cout << "huston... " << std::endl;
         for(dFBAReaction* reaction: this->reactions)
         { reaction->setFluxValue(0.0); }
     }
