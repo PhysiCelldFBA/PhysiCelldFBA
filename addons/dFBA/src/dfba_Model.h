@@ -35,7 +35,7 @@ class dFBAModel
 
 		std::string id;
 
-		/** \brief vector of reaction objects*/
+		/** \brief vector of metabolite objects*/
 		std::vector<dFBAMetabolite*> metabolites;
 
 		/** \brief map between metabolites' ids and metabolites' references **/
@@ -65,14 +65,26 @@ class dFBAModel
 		/** \brief Destructor */
 		~dFBAModel();
 
+		/** \brief Copy */
+		dFBAModel(const dFBAModel& copy);
+
+		/** \brief new assignment operator */
+		dFBAModel& operator=(const dFBAModel& other);
+
+		/** \brief Clear function */
+		void clear();
+
+		/** \brief Check if the model is initialized*/
+		bool isInitialized();
+
 		/** \brief Check if there is a metaboltie with a given ID*/
-		bool hasMetabolite(std::string mId);
+		bool hasMetabolite(const std::string& id) const;
 
 		/** \brief a metabolite pointer using a string Id*/
-		const dFBAMetabolite* getMetabolite(std::string mId);
+		dFBAMetabolite* getMetabolite(const std::string& mId) const;
 
 		/** \brief Add new metabolite to the model*/
-		void addMetabolite(dFBAMetabolite* met);
+		dFBAMetabolite* addMetabolite(const std::string& id);
 
 		
 		/** \brief Check if there is a reaction with a given ID*/

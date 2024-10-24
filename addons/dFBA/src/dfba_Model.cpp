@@ -46,32 +46,37 @@ const int dFBAModel::getNumMetabolites()
     return this->metabolites.size();
 }
 
-bool dFBAModel::hasMetabolite(std::string mId)
+bool dFBAModel::hasMetabolite(const std::string& id) const
 {
-    std::map<std::string, int>::iterator itr;
-    itr = this->metaboliteIndexer.find(mId);
-    return itr != this->metaboliteIndexer.end();
+    return this->metaboliteIndexer.find(id) != this->metaboliteIndexer.end();
 }
 
-void dFBAModel::addMetabolite(dFBAMetabolite* met)
+dFBAMetabolite* dFBAModel::addMetabolite(const std::string& id)
 {
-    if (!this->hasMetabolite( met->getId() ))
-    {
-        this->metabolites.push_back(met);
-        this->metaboliteIndexer[met->getId()] = this->metabolites.size() - 1;
+    // Check if metabolite already exists by its ID
+    auto it = this->metaboliteIndexer.find(id);
+    if (it == this->metaboliteIndexer.end()) {
+        // If metabolite does not exist, create it and add it to the model
+        dFBAMetabolite* newMet = new dFBAMetabolite(id);
+        this->metabolites.push_back(newMet);
+        this->metaboliteIndexer[id] = this->metabolites.size() - 1;
+        return newMet;
+    } else {
+        // If metabolite already exists, return the existing one
+        return this->metabolites[it->second];
     }
-
 }
 
-const dFBAMetabolite* dFBAModel::getMetabolite(std::string mId)
-{
-    if (this->hasMetabolite(mId))
-    {
-        int idx = this->metaboliteIndexer[mId];
+dFBAMetabolite* dFBAModel::getMetabolite(const std::string& mId) const {
+    auto it = this->metaboliteIndexer.find(mId);
+    if (it != this->metaboliteIndexer.end()) {
+        int idx = it->second;
         return this->metabolites[idx];
     }
-    return nullptr;
+    return nullptr;  // Return nullptr if metabolite doesn't exist
 }
+
+
 
 const std::vector<dFBAMetabolite*> dFBAModel::getListOfMetabolites() const
 {
@@ -202,7 +207,7 @@ void dFBAModel::readSBMLModel(const char* sbmlFileName)
 
         dFBAMetabolite* metabolite = new dFBAMetabolite(species->getId());
         metabolite->setName(species->getName());
-        this->addMetabolite(metabolite);
+        this->addMetabolite(metabolite->getId());
     }
 
     for(unsigned int i = 0; i < model->getNumReactions(); i++)
@@ -234,12 +239,12 @@ void dFBAModel::readSBMLModel(const char* sbmlFileName)
             {
                 dFBAMetabolite* metabolite = new dFBAMetabolite(sbml_species->getSpecies());
                 metabolite->setName(sbml_species->getName());
-                this->addMetabolite(metabolite);
+                this->addMetabolite(metabolite->getId());
             }
             
             const dFBAMetabolite* metabolite = this->getMetabolite(sbml_species->getSpecies());
             if (metabolite != nullptr)
-                reaction->addMetabolite(metabolite, stoich_coef);
+                reaction->addMetabolite(metabolite->getId(), stoich_coef);
             else
                 std::cout << "ERROR: dFBAMetabolite " << sbml_species->getSpecies() << " not found" << std::endl;
         }
@@ -254,11 +259,11 @@ void dFBAModel::readSBMLModel(const char* sbmlFileName)
             {
                 dFBAMetabolite* metabolite = new dFBAMetabolite(sbml_species->getSpecies());
                 metabolite->setName(sbml_species->getName());
-                this->addMetabolite(metabolite);
+                this->addMetabolite(metabolite->getId());
             }
             const dFBAMetabolite* metabolite = this->getMetabolite(sbml_species->getSpecies());
             if (metabolite != nullptr)
-                reaction->addMetabolite(metabolite, stoich_coef);
+                reaction->addMetabolite(metabolite->getId(), stoich_coef);
             else
                 std::cout << "ERROR: dFBAMetabolite " << sbml_species->getSpecies() << " not found" << std::endl;
         }
@@ -268,17 +273,23 @@ void dFBAModel::readSBMLModel(const char* sbmlFileName)
     // The following code is intended to extract the objective function from the sbml using
     // the FbcdFBAModelPlugin; then the coefficients are assigned to the corresponding dFBAReactions
     FbcModelPlugin* mplugin = static_cast<FbcModelPlugin*>(model->getPlugin("fbc"));
-    ListOfObjectives* listOfObjectives =  mplugin->getListOfObjectives();
-    Objective* objective =  mplugin->getObjective(listOfObjectives->getActiveObjective());
-    ListOfFluxObjectives* listOfFluxObjectives = objective->getListOfFluxObjectives();
+    if (mplugin) {
+        ListOfObjectives* listOfObjectives = mplugin->getListOfObjectives();
+        Objective* objective = mplugin->getObjective(listOfObjectives->getActiveObjective());
+        ListOfFluxObjectives* listOfFluxObjectives = objective->getListOfFluxObjectives();
 
-    for(unsigned int i=0; i <listOfFluxObjectives->getNumFluxObjectives(); i++)
-    {
-        FluxObjective* fluxObjective = listOfFluxObjectives->get(i);
-        std::string rId = fluxObjective->getReaction();
-        double objectiveCoefficient = fluxObjective->getCoefficient();
-        dFBAReaction* dFBAReaction = this->getReaction(rId);
-        dFBAReaction->setObjectiveCoefficient(objectiveCoefficient);
+        for (unsigned int i = 0; i < listOfFluxObjectives->getNumFluxObjectives(); i++)
+        {
+            FluxObjective* fluxObjective = listOfFluxObjectives->get(i);
+            std::string rId = fluxObjective->getReaction();
+            double objectiveCoefficient = fluxObjective->getCoefficient();
+            dFBAReaction* dFBAReaction = this->getReaction(rId);
+            if (dFBAReaction) {
+                dFBAReaction->setObjectiveCoefficient(objectiveCoefficient);
+            } else {
+                std::cerr << "ERROR: dFBAReaction " << rId << " not found" << std::endl;
+            }
+        }
     }
 
     delete document;
@@ -311,18 +322,24 @@ void dFBAModel::initProblem()
     for(dFBAReaction* rxn: this->reactions)
     {
         int col_idx = this->reactionsIndexer[rxn->getId()];
+        std::cout << "Adding reaction " << rxn->getId() << " with index: " << this->reactionsIndexer[rxn->getId()] << " to the LP problem" << std::endl;
         col_lb[col_idx] = rxn->getLowerBound();
         col_ub[col_idx] = rxn->getUpperBound();
         objective[col_idx] = rxn->getObjectiveCoefficient();
 
-        const std::map<const dFBAMetabolite*, double> metabolites = rxn->getMetabolites();
+        const std::map<std::string, double>& metabolites = rxn->getMetabolites();
+
         CoinPackedVector col;
-        for(auto it=metabolites.begin(); it!=metabolites.end(); it++)
-        {
-            const dFBAMetabolite* met = it->first;
+        for (auto it = metabolites.begin(); it != metabolites.end(); ++it) {
+            const std::string& metId = it->first;  // Get metabolite ID
             double stoich_coeff = it->second;
-            int row_idx = this->metaboliteIndexer[met->getId()];
-            col.insert(row_idx, stoich_coeff);
+
+            // Use the metabolite ID to get the index from metaboliteIndexer
+            auto idx_it = this->metaboliteIndexer.find(metId);
+            if (idx_it != this->metaboliteIndexer.end()) {
+                int row_idx = idx_it->second;
+                col.insert(row_idx, stoich_coeff);
+            }
         }
         matrix.appendCol(col);
     }
@@ -354,14 +371,57 @@ void dFBAModel::writeProblem(const char *filename)
 dFBASolution dFBAModel::optimize()
 {
     std::cout << "Running FBA... " << std::endl;
-    std::cout << "Status before " << this->problem.statusOfProblem() << std::endl;
+    //std::cout << "Status before " << this->problem.statusOfProblem() << std::endl;
     this->problem.initialSolve();
     this->problem.primal();
-    std::cout << "Status after running " << this->problem.statusOfProblem() << std::endl;
-    std::cout << "Before checking... " << std::endl;
-    if ( problem.isProvenOptimal() )
+    //std::cout << "Status after running " << this->problem.statusOfProblem() << std::endl;
+    //std::cout << "Before checking... " << std::endl;
+    //std::cout << "Checking if problem is proven optimal..." << std::endl;
+    bool isOptimal = problem.isProvenOptimal();
+    if(isOptimal){
+        //std::cout << "Problem is proven optimal: " << isOptimal << std::endl;
+        //std::cout << "Optimal solution has been found!!! " << std::endl;
+        const double *columnPrimal = this->problem.getColSolution();
+        std::map<std::string,double> fluxes;
+        std::map<std::string,double> reduced_costs;
+
+        std::string status;
+
+        double fopt =  problem.getObjValue();
+        if (problem.status() == 0){
+            status = "optimal";
+            //std::cout << status << std::endl;
+        }
+        else if (problem.status() == 1){
+            status = "infeasible";
+            std::cout << status << std::endl;
+        }
+        else{
+            status = "unknown";
+            std::cout << status << std::endl;
+        }
+        
+        for(auto reaction: this->reactions)
+        {
+            int column_idx = this->reactionsIndexer[reaction->getId()];
+
+            double flux = columnPrimal[column_idx];
+            fluxes[reaction->getId()] = flux;
+            reaction->setFluxValue(flux);
+        }
+
+        solution.objective_value = fopt;
+        solution.status = status;
+        solution.fluxes = fluxes;
+
+    }
+    else{
+        std::cout << "Problem is not proven optimal: " << isOptimal << std::endl; 
+    }
+
+    if ( isOptimal )
     {
-        std::cout << "Optimal solution found... ";
+        //std::cout << "Optimal solution found... ";
         const double *columnPrimal = this->problem.getColSolution();
         std::map<std::string,double> fluxes;
         std::map<std::string,double> reduced_costs;
