@@ -27,8 +27,119 @@ dFBAModel::~dFBAModel() {
     for(dFBAMetabolite* met: this->metabolites)
         delete met;
 
-    if (this->handler != NULL)
+    if (this->handler != nullptr)
         delete handler;
+}
+
+dFBAModel::dFBAModel(const dFBAModel& copy) {
+    // Copy primitive members
+    this->id = copy.id;
+    this->is_initialized = copy.is_initialized;
+
+    // Deep copy metabolites
+    for (auto original_metabolite : copy.metabolites) {
+        this->metabolites.push_back(new dFBAMetabolite(*original_metabolite));
+    }
+
+    // Deep copy reactions
+    for (auto original_reaction : copy.reactions) {
+        this->reactions.push_back(new dFBAReaction(*original_reaction));
+    }
+
+    // Copy maps
+    this->metaboliteIndexer = copy.metaboliteIndexer;
+    this->reactionsIndexer = copy.reactionsIndexer;
+
+    // Copy solution (assuming it can be copied by value)
+    this->solution = copy.solution;
+
+    // Handle ClpSimplex problem copying (depends on how `ClpSimplex` needs to be cloned)
+    if (copy.is_initialized) {
+        this->problem = copy.problem;  // Modify if deep copy is needed
+    }
+
+    // Copy message handler
+    if (copy.handler != nullptr) {
+        this->handler = new CoinMessageHandler(*copy.handler);
+    } else {
+        this->handler = nullptr;
+    }
+}
+
+
+
+dFBAModel& dFBAModel::operator=(const dFBAModel& other) {
+    if (this == &other) {
+        return *this; // Handle self-assignment
+    }
+
+    // Clean up existing resources to prevent memory leaks
+    for (auto met : metabolites) {
+        delete met;
+    }
+    metabolites.clear();
+
+    for (auto rxn : reactions) {
+        delete rxn;
+    }
+    reactions.clear();
+
+    if (handler != nullptr) {
+        delete handler;
+    }
+
+    // Copy primitive members
+    this->id = other.id;
+    this->is_initialized = other.is_initialized;
+
+    // Deep copy metabolites
+    for (auto original_metabolite : other.metabolites) {
+        this->metabolites.push_back(new dFBAMetabolite(*original_metabolite));
+    }
+
+    // Deep copy reactions
+    for (auto original_reaction : other.reactions) {
+        this->reactions.push_back(new dFBAReaction(*original_reaction));
+    }
+
+    // Copy other maps
+    this->metaboliteIndexer = other.metaboliteIndexer;
+    this->reactionsIndexer = other.reactionsIndexer;
+
+    // Copy solution (assuming it can be copied by value)
+    this->solution = other.solution;
+
+    // Handle ClpSimplex problem copying
+    if (other.is_initialized) {
+        this->problem = other.problem; // Modify if deep copy is needed
+        this->is_initialized = true;
+    }
+
+    // Copy message handler
+    if (other.handler != nullptr) {
+        this->handler = new CoinMessageHandler(*other.handler);
+    } else {
+        this->handler = nullptr;
+    }
+
+    return *this;
+}
+
+
+
+void dFBAModel::clear(){
+
+    this->id = "none";
+    this->is_initialized = false;
+    this->reactions.clear();
+    this->metabolites.clear();
+    this->reactionsIndexer.clear();
+    this->metaboliteIndexer.clear();
+    this->solution.clear();
+    this->problem = ClpSimplex();
+    this->handler = NULL;
+
+    return;
 }
 
 const ClpSimplex* dFBAModel::getLpModel() const
@@ -215,6 +326,7 @@ void dFBAModel::readSBMLModel(const char* sbmlFileName)
         Reaction* sbml_reaction = listOfReactions->get(i);
 
         dFBAReaction* reaction = new dFBAReaction(sbml_reaction->getId());
+        std::cout << "Adding reaction with ID: " << reaction->getId() << std::endl;
         reaction->setName(sbml_reaction->getName());
 
         FbcReactionPlugin* rxnFbc = static_cast<FbcReactionPlugin*> (sbml_reaction->getPlugin("fbc"));
@@ -222,12 +334,18 @@ void dFBAModel::readSBMLModel(const char* sbmlFileName)
         {
             // Getting dFBAReaction's upper and lower bounds
             const std::string lbId = rxnFbc->getLowerFluxBound();
-            double lb = listOfParameters->get(lbId)->getValue();
-            reaction->setLowerBound(lb);
+            Parameter* lbParam = listOfParameters->get(lbId);
+            if (lbParam) {
+                double lb = lbParam->getValue();
+                reaction->setLowerBound(lb);
+            }
 
             const std::string ubId = rxnFbc->getUpperFluxBound();
-            double ub = listOfParameters->get(ubId)->getValue();
-            reaction->setUpperBound(ub);
+            Parameter* ubParam = listOfParameters->get(ubId);
+            if (ubParam) {
+                double ub = ubParam->getValue();
+                reaction->setUpperBound(ub);
+            }
         }
         int numReactans = sbml_reaction->getNumReactants();
         for(int j = 0; j < numReactans; j++)
@@ -477,6 +595,10 @@ double dFBAModel::getObjectiveValue()
     else
         std::cout << "WARNING: Primal infeasible" << std::endl;
     return 0;
+}
+
+bool dFBAModel::isInitialized(){
+    return this->is_initialized;
 }
 
 
