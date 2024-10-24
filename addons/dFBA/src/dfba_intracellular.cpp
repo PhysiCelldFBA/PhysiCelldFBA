@@ -1,4 +1,7 @@
+#include "dfba_Reaction.h"
+#include "dfba_Model.h"
 #include "dfba_intracellular.h"
+
 #include <sstream>
 #include <iostream>
 
@@ -7,27 +10,46 @@ namespace PhysiCelldFBA {
 
 dFBAIntracellular::dFBAIntracellular() : Intracellular()
 {
-    this->intracellular_type = "dfba";
+    intracellular_type = "dfba";
+    objective_reaction = "";
+    sbml_filename = "";
+    cell_density = 0.0;
+    max_growth_rate = 0.0;
+    current_growth_rate = 0.0;
+    next_dfba_run = 0.0;
 }
 
 dFBAIntracellular::dFBAIntracellular(pugi::xml_node& node)
 {
     intracellular_type = "dfba";
+    objective_reaction = "";
+    sbml_filename = "";
+    cell_density = 0.0;
+    max_growth_rate = 0.0;
+    current_growth_rate = 0.0;
+    next_dfba_run = 0.0;
 	this->initialize_intracellular_from_pugixml(node);
 }
 
-dFBAIntracellular::dFBAIntracellular(dFBAIntracellular* copy) 
-{
-    this->intracellular_type = copy->intracellular_type;
-    this->objective_reaction = copy->objective_reaction;
-    this->sbml_filename = copy->sbml_filename;
-    this->sbml_model = copy->sbml_model;
-    this->cell_density = copy->cell_density;
-    this->max_growth_rate = copy->max_growth_rate;
-    this->current_growth_rate = copy->current_growth_rate;
-    this->next_dfba_run = copy->next_dfba_run;
-    //this->sbml_model.initProblem();
+dFBAIntracellular::dFBAIntracellular(const dFBAIntracellular& copy) : Intracellular() {
+    intracellular_type = copy.intracellular_type;
+    objective_reaction = copy.objective_reaction;
+    sbml_filename = copy.sbml_filename;
+    cell_density = copy.cell_density;
+    max_growth_rate = copy.max_growth_rate;
+    current_growth_rate = copy.current_growth_rate;
+    next_dfba_run = copy.next_dfba_run;
+
+    // Copy sbml_model
+    sbml_model = dFBAModel(copy.sbml_model);
+
+    // Copy substrate_exchanges (map is copied by value, which is fine here)
+    substrate_exchanges = copy.substrate_exchanges;
+
+    // Copy the initialization flag
+    is_initialized = copy.is_initialized;
 }
+
 
 int dFBAIntracellular::parse_transport_model(pugi::xml_node& node)
 {
@@ -212,7 +234,7 @@ void dFBAIntracellular::initialize_intracellular_from_pugixml(pugi::xml_node& no
 
 
     std::cout << "Loading SBML model from: " << this->sbml_filename << std::endl;
-    sbml_model.initModel(this->sbml_filename.c_str());
+    this->sbml_model.initModel(this->sbml_filename.c_str());
     
     map<std::string, ExchangeFluxData>::iterator it;
     for(it = this->substrate_exchanges.begin(); it != this->substrate_exchanges.end(); it++)
@@ -233,6 +255,16 @@ void dFBAIntracellular::initialize_intracellular_from_pugixml(pugi::xml_node& no
 void dFBAIntracellular::start()
 {
     this->next_dfba_run = PhysiCell::diffusion_dt + PhysiCell::PhysiCell_globals.current_time;
+
+    for (const auto& reaction : this->sbml_model.getListOfReactions())
+{
+    if (reaction != nullptr) {
+        std::cout << "Reaction: " << this->sbml_model.getReactionIndex(reaction->getId()) 
+                  << " Reaction id: " << reaction->getId() 
+                  << " Reaction string: " << reaction->getReactionString(this->sbml_model) << std::endl;
+    }
+}
+
 }
 
 
@@ -300,7 +332,7 @@ void dFBAIntracellular::update(){
     if (solution.status == "infeasible"){
         std::cout << "I'm dead from the metabolic point of view" << std::endl;
         this->current_growth_rate = -1;
-    }else if(solution.status == "infeasible"){
+    }else if(solution.status == "unknown"){
         std::cout << "ERROR: Unknown status for the FBA problem!" << std::endl;
         exit(1);
     }else{
@@ -314,6 +346,8 @@ void dFBAIntracellular::update_dfba_outputs(PhysiCell::Cell* pCell, PhysiCell::P
 
     
     // float growth_rate = dfba_model->model.getObjectiveValue();
+    std::cout << "Cell ID : " << pCell->ID << std::endl;
+    std::cout << "Growth rate: " << this->current_growth_rate << std::endl;
     
     double growth_rate = this->current_growth_rate * hours_to_minutes; // growth_rate 1/h -> 1/min
     

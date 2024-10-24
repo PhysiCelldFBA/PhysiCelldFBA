@@ -67,13 +67,13 @@ class dFBAIntracellular : public PhysiCell::Intracellular
 
 	dFBAIntracellular(pugi::xml_node& node);
 	
-	dFBAIntracellular(dFBAIntracellular* copy);
+	dFBAIntracellular(const dFBAIntracellular& copy);
 
 	//	~Intracellular();
 
 	// rwh: review this
 	Intracellular* clone(){
-		return static_cast<Intracellular*>(new dFBAIntracellular(this));
+		return static_cast<Intracellular*>(new dFBAIntracellular(*this));
 	}
 
 	Intracellular* getIntracellularModel() 
