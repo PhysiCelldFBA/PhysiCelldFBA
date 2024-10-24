@@ -22,6 +22,9 @@ class dFBAMetabolite
 		dFBAMetabolite(std::string id);
 		~dFBAMetabolite();
 
+		/** \brief Copy */
+		dFBAMetabolite(const dFBAMetabolite& copy);
+
 		const std::string& getId() const;
 
 		void setName(std::string value);

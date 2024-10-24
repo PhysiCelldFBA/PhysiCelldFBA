@@ -22,6 +22,11 @@ dFBAMetabolite::~dFBAMetabolite() {
 
 }
 
+dFBAMetabolite::dFBAMetabolite(const dFBAMetabolite& copy) {
+    this->id = copy.id;
+    this->name = copy.name;
+}
+
 const std::string& dFBAMetabolite::getId() const {
   return this->id;
 }
