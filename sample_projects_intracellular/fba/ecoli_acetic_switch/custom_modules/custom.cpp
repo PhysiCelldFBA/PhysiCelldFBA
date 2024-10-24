@@ -116,7 +116,17 @@ void setup_tissue(void)
 
 	Cell* pCell = create_cell(get_cell_definition("default"));
 	std::vector<double> pos(3, 0.0);
+	pos[0] = 200.0;
+	pos[1] = 0.0;
+	pos[2] = 0.0;
 	pCell->assign_position(pos);
+
+	Cell* second_pCell = create_cell(get_cell_definition("default"));
+	pos[0] = -200.0;
+	pos[1] = 0.0;
+	pos[2] = 0.0;
+	second_pCell->assign_position(pos);
+
 	// for (int i = 0; i < positions.size(); i++)
 	// {
 	// 	pCell = create_cell(get_cell_definition("default"));
