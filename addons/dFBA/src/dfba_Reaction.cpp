@@ -78,55 +78,47 @@ double dFBAReaction::getFluxValue()
     return this->fluxValue;
 }
 
-int dFBAReaction::getNumberOfMetabolites()
-{
+int dFBAReaction::getNumberOfMetabolites() const {
     return this->metabolites.size();
 }
 
-const std::map < const dFBAMetabolite *, double >&dFBAReaction::getMetabolites() const
-{
+const std::map<std::string, double>& dFBAReaction::getMetabolites() const {
     return this->metabolites;
 }
 
-bool dFBAReaction::reversible()
+bool dFBAReaction::reversible() const
 {
     return lowerBound < 0;
 }
 
-bool dFBAReaction::hasMetabolite(std::string mId)
+bool dFBAReaction::hasMetabolite(const std::string& mId) const
 {
-    std::map < std::string, const dFBAMetabolite *>::iterator it;
-    it = this->idMetaboliteMap.find(mId);
-    bool hasMetabolite = (it != this->idMetaboliteMap.end());
-    return hasMetabolite;
+    return this->metabolites.find(mId) != this->metabolites.end();
 }
 
-
-void dFBAReaction::addMetabolite(const dFBAMetabolite * met, double stoich)
-{
-    if (this->hasMetabolite(met->getId()))
-    {
-        this->metabolites[met] += stoich;
-    }
-    else
-    {
-        this->idMetaboliteMap[met->getId()] = met;
-        this->metabolites[met] = stoich;
+void dFBAReaction::addMetabolite(const std::string& mId, double stoich) {
+    auto it = metabolites.find(mId);
+    if (it != metabolites.end()) {
+        // If the metabolite is already involved, just update the stoichiometric coefficient
+        it->second += stoich;
+    } else {
+        // Otherwise, add a new metabolite with its stoichiometric coefficient
+        metabolites[mId] = stoich;
     }
 }
 
-std::vector < std::string > dFBAReaction::getReactants()
-{
-    std::vector < std::string > reactants;
-    for (auto itr = this->metabolites.begin();
-            itr != this->metabolites.end(); ++itr)
-    {
 
-        const dFBAMetabolite *met = itr->first;
-        double sotich = itr->second;
-        if (sotich < 0)
+std::vector<std::string> dFBAReaction::getReactants() const
+{
+    std::vector<std::string> reactants;
+
+    for (const auto& metabolite : this->metabolites)
+    {
+        const std::string& mId = metabolite.first;
+        double stoich = metabolite.second;
+
+        if (stoich < 0) // Reactants have negative stoichiometric coefficients
         {
-            std::string mId = met->getId();
             reactants.push_back(mId);
         }
     }
@@ -134,78 +126,75 @@ std::vector < std::string > dFBAReaction::getReactants()
     return reactants;
 }
 
-std::vector < std::string > dFBAReaction::getProducts()
-{
-    std::vector < std::string > products;
-    for (auto itr = this->metabolites.begin();
-            itr != this->metabolites.end(); ++itr)
-    {
 
-        const dFBAMetabolite *met = itr->first;
-        double sotich = itr->second;
-        if (sotich > 0)
+std::vector<std::string> dFBAReaction::getProducts() const
+{
+    std::vector<std::string> products;
+
+    for (const auto& metabolite : this->metabolites)
+    {
+        const std::string& mId = metabolite.first;
+        double stoich = metabolite.second;
+
+        if (stoich > 0) // Products have positive stoichiometric coefficients
         {
-            std::string mId = met->getId();
             products.push_back(mId);
         }
     }
+
     return products;
 }
 
-double dFBAReaction::getStoichCoefficient(std::string mId)
+
+double dFBAReaction::getStoichCoefficient(const std::string& mId) const
 {
-    double coefficient = 0;
-    if (hasMetabolite(mId))
+    // Check if the metabolite exists in the map
+    auto it = this->metabolites.find(mId);
+    if (it != this->metabolites.end())
     {
-        const dFBAMetabolite *met = this->idMetaboliteMap[mId];
-        coefficient = this->metabolites[met];
+        return it->second; // Return the stoichiometric coefficient if found
     }
-    return coefficient;
+
+    return 0.0; // Return 0 if metabolite is not found
 }
 
-std::string dFBAReaction::getReactionString()
-{
-    std::vector < std::string > compounds;
+std::string dFBAReaction::getReactionString(const dFBAModel& model) const {
+    std::vector<std::string> compounds;
     std::string reactionString = "";
 
+    // Get reactants
     compounds = this->getReactants();
-    for (unsigned int i = 0; i < compounds.size(); i++)
-    {
-        std::string & mId = compounds[i];
-        const dFBAMetabolite *met = this->idMetaboliteMap[mId];
-        // Change the sign (-) of the coeeficient for printing
-        float coeff = -1. * this->getStoichCoefficient(mId);
-        if (int (coeff) == coeff)
-            reactionString += std::to_string(int (coeff));
-        else
-            reactionString += std::to_string(coeff);
+    for (unsigned int i = 0; i < compounds.size(); i++) {
+        const std::string& mId = compounds[i];
+        const dFBAMetabolite* met = model.getMetabolite(mId);  // Accessing the actual metabolite
 
-        //reactionString += " " + met->getName();
-        reactionString += " " + met->getId();
-
-        if (i < compounds.size() - 1)
-            reactionString += " + ";
+        // Update reaction string using the metabolite details
+        if (met) {
+            double coeff = -1.0 * this->getStoichCoefficient(mId);
+            reactionString += std::to_string(coeff) + " " + met->getId();
+            if (i < compounds.size() - 1) {
+                reactionString += " + ";
+            }
+        }
     }
-    if (reversible())
-        reactionString += " <==> ";
-    else
-        reactionString += " --> ";
 
+    reactionString += reversible() ? " <==> " : " --> ";
+
+    // Get products (similar approach)
     compounds = getProducts();
-    for (unsigned int i = 0; i < compounds.size(); i++)
-    {
-        const std::string & mId = compounds[i];
-        const dFBAMetabolite *met = this->idMetaboliteMap[mId];
-        float coeff = getStoichCoefficient(mId);
-        if (int (coeff) == coeff)
-            reactionString += std::to_string(int (coeff));
-        else
-            reactionString += std::to_string(coeff);
+    for (unsigned int i = 0; i < compounds.size(); i++) {
+        const std::string& mId = compounds[i];
+        const dFBAMetabolite* met = model.getMetabolite(mId);
 
-        reactionString += " " + met->getId();
-
-        if (i < compounds.size() - 1)
-            reactionString += " + ";
+        if (met) {
+            double coeff = this->getStoichCoefficient(mId);
+            reactionString += std::to_string(coeff) + " " + met->getId();
+            if (i < compounds.size() - 1) {
+                reactionString += " + ";
+            }
+        }
     }
+
     return reactionString;
 }
+

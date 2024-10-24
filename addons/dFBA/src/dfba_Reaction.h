@@ -25,19 +25,25 @@ class dFBAReaction
 		double objectiveCoefficient;
 		double fluxValue;
 
-		std::map<const dFBAMetabolite*, double> metabolites;
-		std::map<std::string, const dFBAMetabolite*> idMetaboliteMap;
+		// Map of metabolite IDs to stoichiometric coefficients
+    	std::map<std::string, double> metabolites;
 
 	public:
+		/** \brief Constructor */
 		dFBAReaction(std::string id);
+
+		/** \brief Destructor */
 		~dFBAReaction();
+
+		/** \brief Copy */
+		dFBAReaction(const dFBAReaction& copy);
 
 		const std::string& getId() const;
 
 		void setName(std::string name);
 		const std::string& getName() const;
 
-		int getNumberOfMetabolites();
+		int getNumberOfMetabolites() const;
 
 		void setLowerBound(double lowerBound);
 		double getLowerBound();
@@ -51,17 +57,17 @@ class dFBAReaction
 		void setFluxValue(double flux_value);
 		double getFluxValue();
 
-		bool reversible();
-		bool hasMetabolite(std::string mId);
-		void addMetabolite(const dFBAMetabolite* met, double stoich);
+		bool reversible() const;
+		bool hasMetabolite(const std::string& mId) const;
+		void addMetabolite(const std::string& mId, double stoich);
 
-		std::vector<std::string> getReactants();
-		std::vector<std::string> getProducts();
-		double getStoichCoefficient(std::string mId);
+		std::vector<std::string> getReactants() const;
+    	std::vector<std::string> getProducts() const;
+		double getStoichCoefficient(const std::string& mId) const;
 
-		std::string getReactionString();
+		std::string getReactionString(const dFBAModel& model) const;
 
-		const std::map<const dFBAMetabolite*, double>& getMetabolites() const;
+		const std::map<std::string, double>& getMetabolites() const;
 };
 
 
