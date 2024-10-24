@@ -29,3 +29,10 @@ dFBASolution::~dFBASolution()
 {
 
 }
+void dFBASolution::clear()
+{
+    this->objective_value = 0;
+    this->status = "none";
+    this->fluxes.clear();
+    this->reduced_costs.clear();
+}

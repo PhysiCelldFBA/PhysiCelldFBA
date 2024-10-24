@@ -30,6 +30,8 @@ class dFBASolution
         dFBASolution(double objective_value, std::string status, std::map<std::string,double> fluxes);
         ~dFBASolution();
 
+        void clear();
+
         double getObjectiveValue(){ return this->objective_value; }
         std::string getStatus(){ return this->status; };
         std::map<std::string, double> getFluxes(){ return fluxes; };
