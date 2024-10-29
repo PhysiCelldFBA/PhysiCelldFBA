@@ -25,7 +25,7 @@ namespace PhysiCelldFBA {
 
 static std::string PhysiCelldFBA_Version = "0.0.1"; 
 
-static float hours_to_minutes = 1/60;
+static double hours_to_minutes = 1.0 / 60.0;
 static float PI = PhysiCell::PhysiCell_constants::pi;
 
 struct KineticParam

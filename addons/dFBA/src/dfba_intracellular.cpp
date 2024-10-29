@@ -352,7 +352,7 @@ void dFBAIntracellular::update_dfba_outputs(PhysiCell::Cell* pCell, PhysiCell::P
     double growth_rate = this->current_growth_rate * hours_to_minutes; // growth_rate 1/h -> 1/min
     
     // V(t+dt) = V(t) + V(t) * mu * dt = V(t) * (1 + u * dt) 
-    float volume_increase_ratio = 1 + (growth_rate * dt);
+    double volume_increase_ratio = 1.0 + (growth_rate * dt);
     phenotype.volume.multiply_by_ratio( volume_increase_ratio );
     phenotype.geometry.update(pCell, phenotype, dt);
 
