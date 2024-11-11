@@ -162,6 +162,7 @@ class dFBAIntracellular : public PhysiCell::Intracellular
     // ================  specific to "maboss" ================
 	bool has_variable(std::string name) { return false; }
 	bool get_boolean_variable_value(std::string name) { return false; }
+	double get_flux_value(std::string name);
 	void set_boolean_variable_value(std::string name, bool value) {	}
 	void print_current_nodes(){	}
 	

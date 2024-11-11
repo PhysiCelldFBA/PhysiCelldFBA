@@ -642,6 +642,7 @@ class Intracellular
 	virtual bool has_variable(std::string name) = 0; 
 	virtual bool get_boolean_variable_value(std::string name) = 0;
 	virtual void set_boolean_variable_value(std::string name, bool value) = 0;
+	virtual double get_flux_value(std::string name) = 0;
 	// virtual bool get_double_variable_value(std::string name) = 0;
 	// virtual void set_double_variable_value(std::string name, bool value) = 0;
 	virtual void print_current_nodes() = 0;

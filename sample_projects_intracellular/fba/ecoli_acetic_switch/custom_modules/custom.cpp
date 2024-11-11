@@ -222,6 +222,23 @@ std::vector<std::string> my_coloring_function( Cell* pCell )
 
 	std::vector<std::string> output(4, "red");
 
+    std::string fba_flux_id = "R_EX_o2_e";
+        
+	double flux_value =  pCell->phenotype.intracellular->get_flux_value(fba_flux_id);
+	std::cout << "flux_value: " << flux_value << std::endl;
+
+	if( abs(flux_value) > 0.1 )
+	{
+		output[0] = "blue";
+		output[2] = "blue";
+		return output;
+	}
+	else
+	{
+		output[0] = "green";
+		output[2] = "green";
+	}
+
 	if( pCell->phenotype.death.dead == false && pCell->type == 1 )
 	{
 		 output[0] = "black";
