@@ -127,6 +127,7 @@ class MaBoSSIntracellular : public PhysiCell::Intracellular {
     int validate_PhysiCell_tokens(PhysiCell::Phenotype& phenotype) {return 0; }
     int validate_SBML_species() {return 0; }
     int create_custom_data_for_SBML(PhysiCell::Phenotype& phenotype) {return 0; }
+	double get_flux_value(std::string name) {return 0.0; }
 
 };
 
