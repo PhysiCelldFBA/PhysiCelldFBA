@@ -149,7 +149,6 @@ class dFBAIntracellular : public PhysiCell::Intracellular
 	
 	
         // static void save_PhysiBoSS(std::string path, std::string index);
-	void display(std::ostream&os) {}
 	static void save_dFBA(std::string path, std::string index);
 
 	void update_volume(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double growth_rate, double dt);
