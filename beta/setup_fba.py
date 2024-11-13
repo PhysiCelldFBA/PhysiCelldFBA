@@ -31,6 +31,9 @@ def ensure_directory_exists(path):
 
 def download_and_extract(url, dest_path, is_zip=False):
     """Download and extract a package from a URL."""
+    # Ensure the destination directory exists
+    ensure_directory_exists(dest_path)
+
     filename = url.split('/')[-1]
     file_path = os.path.join(dest_path, filename)
 
@@ -70,10 +73,12 @@ def main():
         pkg_path = os.path.join(default_libs_path, pkg)
 
         # Skip download if package folder already exists and is populated
-        # to add: create check if coin-or and libsbml folder exist, if they do not not, create them and then download the files
         if os.path.exists(pkg_path) and os.listdir(pkg_path):
             print(f"Package {pkg} is already installed. Skipping...")
             continue
+
+        # Ensure the package directory exists
+        ensure_directory_exists(pkg_path)
 
         pkg_dict = packages_dict.get(pkg, {}).get(arch)
         if not pkg_dict:
