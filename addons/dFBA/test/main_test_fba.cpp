@@ -23,6 +23,9 @@ int main (int argc, const char *argv[])
     std::cout << "Initializing LP model: ";
     model->initProblem();
     std::cout << "Ok!" << std::endl;
+    model->setReactionLowerBound("R_EX_glc__D_e", -100.0);
+    model->setReactionLowerBound("R_EX_o2_e", 0.0);
+
 
     std::cout << "Testing FBA: ";
     dFBASolution solution = model->optimize();

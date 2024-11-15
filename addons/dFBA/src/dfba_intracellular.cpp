@@ -322,7 +322,7 @@ void dFBAIntracellular::update_dfba_inputs( PhysiCell::Cell* pCell, PhysiCell::P
         double max_rate = (Vmax * substrate_conc) / (Km + substrate_conc); // should be calculated from density
         // Change sign to use as lower bound of the exchange flux
         double exchange_flux_lb = -1 * max_rate;
-        std::cout << "Substrate: " << substrate_name << " concentration: " << substrate_conc << " Vmax: " << Vmax << " Km: " << Km << " Max rate: " << max_rate << " Exchange flux lb: " << exchange_flux_lb << std::endl;
+        //std::cout << "Substrate: " << substrate_name << " concentration: " << substrate_conc << " Vmax: " << Vmax << " Km: " << Km << " Max rate: " << max_rate << " Exchange flux lb: " << exchange_flux_lb << std::endl;
         // Updateing the lower bound of the corresponding exchange flux
         this->sbml_model.setReactionLowerBound(ex_strut.fba_flux_id, exchange_flux_lb);
     }
@@ -339,6 +339,7 @@ void dFBAIntracellular::update(){
     }else{
         this->current_growth_rate = solution.getObjectiveValue();
     }
+
 }
 
 void dFBAIntracellular::update_dfba_outputs(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt )
@@ -360,11 +361,13 @@ void dFBAIntracellular::update_dfba_outputs(PhysiCell::Cell* pCell, PhysiCell::P
     pCell->set_total_volume( phenotype.volume.total );
     phenotype.geometry.update(pCell, phenotype, dt);
 
-    float solid_fraction = 1 - phenotype.volume.fluid_fraction;     
+    double solid_fraction = 1.0 - phenotype.volume.fluid_fraction;     
     // um³ = um³
-    float solid_volume = phenotype.volume.total * solid_fraction;   
+    double solid_volume = phenotype.volume.total * solid_fraction;   
     // volume.total (um³ = fL) * cell_density (g/mL) = pico grams (g 10^-12)
-    float cell_dry_weight = solid_volume * this->cell_density ;  
+    double cell_dry_weight = solid_volume * this->cell_density ;  
+    // re-scaling from pico grams to grams
+    cell_dry_weight *= 1e-12; // pg * 10^-12 = g
 
     
     // STEPS 4-5 - Update net_export_rates for the different densities
@@ -384,9 +387,10 @@ void dFBAIntracellular::update_dfba_outputs(PhysiCell::Cell* pCell, PhysiCell::P
         // Rescaling FBA exchanges flux into net_export_rates
         // Net export rates are expressed in substance/time
         // flux_value: mmol/gDW/h --> mmol/min
-        // net_export_rate (mmol/min) = flux_value / 60 * cell_dry_weight  = pico*mmol/min = fmol/min
+        // net_export_rate (mmol/min) = flux_value / 60 * cell_dry_weight  = mmol/min
         double net_export_rate = flux_value * hours_to_minutes * cell_dry_weight;
-        net_export_rate *= 1e-12; // fmol/min * 10^-12 = mmol/min
+        net_export_rate *= 1e15; // correct scaling that takes into account the volume units (um³) in BioFVM
+
         phenotype.secretion.net_export_rates[density_index] = net_export_rate;
         if (default_microenvironment_options.track_internalized_substrates_in_each_agent)
         {
