@@ -23,7 +23,7 @@
     </domain>
 
     <overall>
-        <max_time units="min">480.0</max_time>
+        <max_time units="min">960.0</max_time>
         <time_units>min</time_units>
         <space_units>micron</space_units>
         <dt_diffusion units="min">0.01</dt_diffusion>
@@ -66,7 +66,7 @@
         <variable name="oxygen" units="dimensionless" ID="0">
             <physical_parameter_set>
                 <diffusion_coefficient units="micron^2/min">100.0</diffusion_coefficient>
-                <decay_rate units="1/min">0.0</decay_rate>
+                <decay_rate units="1/min">1.0</decay_rate>
             </physical_parameter_set>
             <initial_condition units="mM">0.0</initial_condition>
             <Dirichlet_boundary_condition units="mM" enabled="True">0.0</Dirichlet_boundary_condition>
@@ -284,7 +284,11 @@
                 </intracellular>
             </phenotype>
             <custom_data>
-          </custom_data>
+                <oxygen_flux conserved="false" units="mM/min" description="">0.0</oxygen_flux>
+                <glucose_flux conserved="false" units="mM/min" description="">0.0</glucose_flux>
+                <acetate_flux conserved="false" units="mM/min" description="">0.0</acetate_flux>
+                <growth_rate conserved="false" units="1/min" description="">0.0</growth_rate>
+            </custom_data>
             <initial_parameter_distributions enabled="false">
           </initial_parameter_distributions>
         </cell_definition>
