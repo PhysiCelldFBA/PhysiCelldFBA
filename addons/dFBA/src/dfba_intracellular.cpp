@@ -255,15 +255,16 @@ void dFBAIntracellular::initialize_intracellular_from_pugixml(pugi::xml_node& no
 void dFBAIntracellular::start()
 {
     this->next_dfba_run = PhysiCell::diffusion_dt + PhysiCell::PhysiCell_globals.current_time;
-
+    /*
     for (const auto& reaction : this->sbml_model.getListOfReactions())
-{
+    {   
     if (reaction != nullptr) {
         std::cout << "Reaction: " << this->sbml_model.getReactionIndex(reaction->getId()) 
                   << " Reaction id: " << reaction->getId() 
                   << " Reaction string: " << reaction->getReactionString(this->sbml_model) << std::endl;
+        }
     }
-}
+    */
 
 }
 

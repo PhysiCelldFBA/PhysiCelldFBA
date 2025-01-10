@@ -433,10 +433,10 @@ void dFBAModel::initProblem()
     int n_rows = this->getNumMetabolites();
     int n_cols = this->getNumReactions();
 
-    handler = new CoinMessageHandler(nullptr);
+    this->handler = new CoinMessageHandler(nullptr);
     std::cout << "Initilizing LP problem n=" << n_rows << std::endl;
-    handler->setLogLevel(0);
-    problem.passInMessageHandler(handler);
+    this->handler->setLogLevel(0);
+    this->problem.passInMessageHandler(this->handler);
 
     CoinPackedMatrix matrix;
     matrix.setDimensions(n_rows, 0);
@@ -455,7 +455,7 @@ void dFBAModel::initProblem()
     for(dFBAReaction* rxn: this->reactions)
     {
         int col_idx = this->reactionsIndexer[rxn->getId()];
-        std::cout << "Adding reaction " << rxn->getId() << " with index: " << this->reactionsIndexer[rxn->getId()] << " to the LP problem" << std::endl;
+        //std::cout << "Adding reaction " << rxn->getId() << " with index: " << this->reactionsIndexer[rxn->getId()] << " to the LP problem" << std::endl;
         col_lb[col_idx] = rxn->getLowerBound();
         col_ub[col_idx] = rxn->getUpperBound();
         objective[col_idx] = rxn->getObjectiveCoefficient();
@@ -503,8 +503,8 @@ void dFBAModel::writeProblem(const char *filename)
 
 dFBASolution dFBAModel::optimize()
 {
-    std::cout << "Running FBA... " << std::endl;
-    //std::cout << "Status before " << this->problem.statusOfProblem() << std::endl;
+    //std::cout << "Running FBA... " << std::endl;
+    this->problem.setLogLevel(0);
     this->problem.initialSolve();
     this->problem.primal();
     //std::cout << "Status after running " << this->problem.statusOfProblem() << std::endl;
