@@ -152,7 +152,7 @@ void dFBAIntracellular::parse_growth_model(pugi::xml_node& parent)
 	if ( node )
 	{ 
         this->max_growth_rate = PhysiCell::xml_get_my_double_value(node);
-        assert(this->max_growth_rate > 0);
+        assert(this->max_growth_rate >= 0);
     }
     else
     {

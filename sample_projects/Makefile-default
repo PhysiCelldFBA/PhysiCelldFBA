@@ -253,6 +253,17 @@ ecoli-acetic-switch-sample:
 	cp ./config/PhysiCell_settings.xml ./config/PhysiCell_settings-backup.xml
 	cp ./sample_projects_intracellular/fba/ecoli_acetic_switch/config/* ./config/
 
+dfba_unit_test:
+	cp ./sample_projects_intracellular/fba/dfba_unit_test/custom_modules/* ./custom_modules/
+	touch main.cpp && cp main.cpp main-backup.cpp
+	cp ./sample_projects_intracellular/fba/dfba_unit_test/main.cpp ./main.cpp
+	cp Makefile Makefile-backup
+	cp ./sample_projects_intracellular/fba/dfba_unit_test/Makefile ./
+	cp ./config/PhysiCell_settings.xml ./config/PhysiCell_settings-backup.xml
+	cp ./sample_projects_intracellular/fba/dfba_unit_test/config/* ./config/
+	mkdir ./scripts/
+	cp ./sample_projects_intracellular/fba/dfba_unit_test/scripts/* ./scripts/
+
 cancer-metabolism-sample:
 	cp ./sample_projects_intracellular/fba/cancer_metabolism/custom_modules/* ./custom_modules/
 	touch main.cpp && cp main.cpp main-backup.cpp
