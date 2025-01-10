@@ -109,7 +109,7 @@ class dFBAIntracellular : public PhysiCell::Intracellular
 		 // STEP 1. 
 		// date exchange fluxes lower bound using concentration values of the 
 		// corresponding densities at the agent voxel
-				this->update_dfba_inputs(cell, phenotype, dt);
+		this->update_dfba_inputs(cell, phenotype, dt);
 
 		// STEP 2. 
 		// Run FBA and retrive the solution
