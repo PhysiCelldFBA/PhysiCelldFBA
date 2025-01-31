@@ -617,8 +617,10 @@ class Intracellular
 	virtual bool need_update() = 0;
 
 	// This function update the model for the time_step defined in the xml definition
+	virtual void pre_update_intracellular(Cell* pCell, Phenotype& phenotype, double dt){};
 	virtual void update() = 0;
 	virtual void update(Cell* cell, Phenotype& phenotype, double dt) = 0;
+	virtual void post_update_intracellular(Cell* pCell, Phenotype& phenotype, double dt){};
 
 	// This function deals with inheritance from mother to daughter cells
 	virtual void inherit(Cell* cell) = 0;

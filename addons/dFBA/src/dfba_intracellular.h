@@ -125,7 +125,7 @@ class dFBAIntracellular : public PhysiCell::Intracellular
 		this->next_dfba_run += PhysiCell::diffusion_dt;
 
 		if (phenotype.volume.total	>= 2 * this->reference_volume ){
-			cell->divide();
+			cell->flag_for_division();
 		}
 	};
 
@@ -139,7 +139,7 @@ class dFBAIntracellular : public PhysiCell::Intracellular
 	void parse_growth_model(pugi::xml_node& node);
 	void initLpSolver();
 
-
+	void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt);
 	// libroadrunner specifics
 		
 	// for now, define dummy methods for these in the abstract parent class

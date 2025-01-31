@@ -155,6 +155,7 @@ void Cell_Container::update_all_cells(double t, double phenotype_dt_ , double me
 
 				if ((*all_cells)[i]->functions.post_update_intracellular != NULL)
 					(*all_cells)[i]->functions.post_update_intracellular( (*all_cells)[i], (*all_cells)[i]->phenotype , diffusion_dt_ );
+				(*all_cells)[i]->phenotype.intracellular->post_update_intracellular( (*all_cells)[i], (*all_cells)[i]->phenotype , diffusion_dt_ );
 			}
 		}
 	}
@@ -181,20 +182,8 @@ void Cell_Container::update_all_cells(double t, double phenotype_dt_ , double me
 			}
 		}
 		
-		// process divides / removes 
-		for( int i=0; i < cells_ready_to_divide.size(); i++ )
-		{
-			cells_ready_to_divide[i]->divide();
-		}
-		for( int i=0; i < cells_ready_to_die.size(); i++ )
-		{	
-			cells_ready_to_die[i]->die();	
-		}
-		num_divisions_in_current_step+=  cells_ready_to_divide.size();
-		num_deaths_in_current_step+=  cells_ready_to_die.size();
-		
-		cells_ready_to_die.clear();
-		cells_ready_to_divide.clear();
+		process_death_and_division();
+
 		last_cell_cycle_time= t;
 	}
 		
@@ -316,6 +305,26 @@ void Cell_Container::update_all_cells(double t, double phenotype_dt_ , double me
 	
 	initialzed=true;
 	return;
+}
+
+void Cell_Container::process_death_and_division(){
+
+	// process divides / removes 
+	for( int i=0; i < cells_ready_to_divide.size(); i++ )
+	{
+		cells_ready_to_divide[i]->divide();
+	}
+	for( int i=0; i < cells_ready_to_die.size(); i++ )
+	{	
+		cells_ready_to_die[i]->die();	
+	}
+
+	num_divisions_in_current_step+=  cells_ready_to_divide.size();
+	num_deaths_in_current_step+=  cells_ready_to_die.size();
+		
+	cells_ready_to_die.clear();
+	cells_ready_to_divide.clear();
+
 }
 
 void Cell_Container::register_agent( Cell* agent )

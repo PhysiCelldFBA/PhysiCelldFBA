@@ -459,6 +459,12 @@ void dFBAIntracellular::update_dfba_outputs(PhysiCell::Cell* pCell, PhysiCell::P
     return;
 }
 
+void dFBAIntracellular::post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt){
+
+    #pragma omp master
+    pCell->get_container()->process_death_and_division();
+}
+
 double dFBAIntracellular::get_flux_value(std::string reaction_name)
 {
         
