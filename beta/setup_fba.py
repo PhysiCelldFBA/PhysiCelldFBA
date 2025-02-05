@@ -17,7 +17,12 @@ def get_os_arch():
     if os_type == 'linux':
         return 'linux-x64' if arch in ('x86_64', 'amd64') else 'linux-x86'
     elif os_type == 'darwin':
-        return 'osx'
+        if arch == 'arm64':
+            return 'osx-arm64'
+        elif arch == 'x86_64':
+            return 'osx-x86_64'
+        print(f"Unsupported architecture: {os_type} : {arch}")
+        sys.exit(1)
     elif os_type.startswith('win'):
         return 'win64' if arch == 'amd64' else 'win32'
     else:

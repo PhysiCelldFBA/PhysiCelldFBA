@@ -13,7 +13,7 @@ CUR_DIR = $(shell pwd)
 EXT_DIR = $(CUR_DIR)/addons/dFBA/ext
 
 
-LIB := -L$(EXT_DIR)/libsbml/lib -L$(EXT_DIR)/coin-or/lib/ -lClp-static -lCoinUtils-static -llapack -lsbml-static -lxml2 -lbz2 -lz
+LIB := -L$(EXT_DIR)/libsbml/lib -L$(EXT_DIR)/coin-or/lib/ -lClp -lCoinUtils -llapack -lsbml-static -lxml2 -lbz2 -lz -ggdb
 INC := -DADDON_PHYSIDFBA -I$(EXT_DIR)/libsbml/include -I$(EXT_DIR)/coin-or/include -I$(CUR_DIR)/addons/dFBA/src
 
 

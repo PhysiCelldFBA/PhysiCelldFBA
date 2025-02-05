@@ -4,37 +4,47 @@
         "_refurl": "https://www.coin-or.org/download/binary/Clp/",
         "linux-x64": 
         {
-            "version": "Clp-1.17.6-linux64.zip",
-            "url": "https://maboss.curie.fr/pub/Clp-1.17.6-linux64.zip"
+            "version": "Clp-releases.1.17.10-x86_64-ubuntu20-gcc940-static.tar.gz",
+            "url": "https://github.com/coin-or/Clp/releases/download/releases%2F1.17.10/Clp-releases.1.17.10-x86_64-ubuntu20-gcc940-static.tar.gz"
         },
         "win64": 
         {
-            "version": "Clp-1.17.6-win64.zip",
-            "url": "https://maboss.curie.fr/pub/Clp-1.17.6-win64.zip"
+            "version": "Clp-releases.1.17.10-x86_64-w64-mingw64.zip",
+            "url": "https://github.com/coin-or/Clp/releases/download/releases%2F1.17.10/Clp-releases.1.17.10-x86_64-w64-mingw64.zip"
         },
-        "osx":
+        "osx-arm64":
         {
-            "version": "Clp-1.17.6-osx64.zip",
-            "url": "https://maboss.curie.fr/pub/Clp-1.17.6-osx64.zip"
+            "version": "Clp-releases.1.17.10-arm64-macos14-gcc1330.tar.gz",
+            "url": "https://github.com/coin-or/Clp/releases/download/releases%2F1.17.10/Clp-releases.1.17.10-arm64-macos14-gcc1330.tar.gz"
+        },
+        "osx-x86_64":
+        {
+            "version": "Clp-releases.1.17.10-x86_64-macos13-gcc1330.tar.gz",
+            "url": "https://github.com/coin-or/Clp/releases/download/releases%2F1.17.10/Clp-releases.1.17.10-x86_64-macos13-gcc1330.tar.gz"
         }
     },
     "libsbml": 
     {
-        "_refurl": "https://sourceforge.net/projects/sbml/files/libsbml/5.14.0-experimental/binaries/",
+        "_refurl": "http://maboss.curie.fr/pub/",
         "linux-x64": 
         {
-            "version": "libSBML-5.19.0-linux64.zip",
-            "url": "https://maboss.curie.fr/pub/libSBML-5.19.0-linux64.zip"
+            "version": "libSBML-5.20.4-linux64.zip",
+            "url": "http://maboss.curie.fr/pub/libSBML-5.20.4-linux64.zip"
         },
         "win64": 
         {
-            "version": "libSBML-5.19.0-win64.zip",
-            "url": "https://maboss.curie.fr/pub/libSBML-5.19.0-win64.zip"
+            "version": "libSBML-5.20.4-win64.zip",
+            "url": "http://maboss.curie.fr/pub/libSBML-5.20.4-win64.zip"
         },
-        "osx":
+        "osx-x86_64":
         {
-            "version": "libSBML-5.19.0-osx64.zip",
-            "url": "https://maboss.curie.fr/pub/libSBML-5.19.0-osx64.zip"
+            "version": "libSBML-5.20.4-osx-x86_64.zip",
+            "url": "http://maboss.curie.fr/pub/libSBML-5.20.4-osx-x86_64.zip"
+        },
+        "osx-arm64":
+        {
+            "version": "libSBML-5.20.4-osx-arm64.zip",
+            "url": "http://maboss.curie.fr/pub/libSBML-5.20.4-osx-arm64.zip"
         }
     }
 }
