@@ -77,7 +77,7 @@ list-projects:
 	@echo ""
 	@echo "Sample intracellular projects: template_BM ode-energy-sample physiboss-cell-lines-sample"
 	@echo "                 cancer-metabolism-sample physiboss-tutorial physiboss-tutorial-invasion"
-	@echo ""
+	@echo "                 ecoli-acetic-switch-sample dfba_unit_test crossfeeding-sample"
 	
 template:
 	cp -r ./sample_projects/template/custom_modules/* ./custom_modules/
@@ -272,6 +272,15 @@ cancer-metabolism-sample:
 	cp ./sample_projects_intracellular/fba/cancer_metabolism/Makefile ./
 	cp ./config/PhysiCell_settings.xml ./config/PhysiCell_settings-backup.xml
 	cp ./sample_projects_intracellular/fba/cancer_metabolism/config/* ./config/
+	
+crossfeeding:
+	cp ./sample_projects_intracellular/fba/crossfeeding/custom_modules/* ./custom_modules/
+	touch main.cpp && cp main.cpp main-backup.cpp
+	cp ./sample_projects_intracellular/fba/crossfeeding/main.cpp ./main.cpp
+	cp Makefile Makefile-backup
+	cp ./sample_projects_intracellular/fba/crossfeeding/Makefile ./
+	cp ./config/PhysiCell_settings.xml ./config/PhysiCell_settings-backup.xml
+	cp ./sample_projects_intracellular/fba/crossfeeding/config/* ./config/
 
 template_BM:
 	cp ./sample_projects_intracellular/boolean/template_BM/custom_modules/* ./custom_modules/

@@ -22,3 +22,5 @@ addons/dFBA/test/*.o
 addons/dFBA/test/test_*
 
 .venv
+PhysiCell-Studio/*
+studio.py
