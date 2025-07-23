@@ -1,96 +1,81 @@
+# Compiler
 CC := g++
 
-# Check for environment definitions of compiler
 ifdef PHYSICELL_CPP
 	CC := $(PHYSICELL_CPP)
 endif
 
-ARCH := native # best auto-tuning
+# Architecture
+ARCH := native
 
-# For debugging with gdb just add: -g3 -ggdb -O3
-CFLAGS      := -march=$(ARCH) -O3 -fomit-frame-pointer -mfpmath=both -fopenmp -m64 -std=c++11
+# Flags
+CFLAGS := -march=$(ARCH) -O3 -fomit-frame-pointer -fopenmp -m64 -std=c++11
 
-# Libraries need: SBML and coin-Clp
-DEPS_DIR    := ../ext
-DEPS_CFLAGS := -I$(DEPS_DIR)/libsbml/include -I$(DEPS_DIR)/coin-or/include -I../src
-LD_PATH     := -L$(DEPS_DIR)/libsbml/lib -L$(DEPS_DIR)/coin-or/lib/
-# sudo apt install libbz2-dev
-# sudo apt install libxml2-dev
+# Paths
+CUR_DIR := $(shell pwd)/..
+DEPS_DIR := $(CUR_DIR)/ext
+SRC_DIR := ../src
 
-## "linux-x64", "linux-x86", "win64", "win32", "osx"
-PKG_ARCH := linux-x64
+INCLUDES := -I$(DEPS_DIR)/libsbml/include -I$(DEPS_DIR)/coin-or/include -I$(SRC_DIR)
 
-LIBS        := -lClp-static -lCoinUtils-static -llapack -lsbml-static -lxml2 -lbz2 -lz
+LIBDIRS := -L$(DEPS_DIR)/libsbml/lib -L$(DEPS_DIR)/coin-or/lib
 
+# LIBS := $(DEPS_DIR)/coin-or/lib/libClp.a $(DEPS_DIR)/coin-or/lib/libCoinUtils.a -llapack -lsbml-static -lxml2 -lbz2 -lz
+LIBS := \
+    $(DEPS_DIR)/coin-or/lib/libOsiClp.a \
+    $(DEPS_DIR)/coin-or/lib/libOsi.a \
+    $(DEPS_DIR)/coin-or/lib/libClp.a \
+    $(DEPS_DIR)/coin-or/lib/libCoinUtils.a \
+	$(DEPS_DIR)/libsbml/lib/libsbml-static.a \
+    -llapack -lxml2 -lbz2 -lz
+
+
+# Platform-specific tweaks
 ifeq ($(OS),Windows_NT)
 	WIN_LD_FLAG := -LC:\msys64\mingw64\bin
-	ARCH := win64
 else
-	WIN_LD_FLAG := 
+	WIN_LD_FLAG :=
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Darwin)
-		UNAME_P := $(shell uname -p)
 		var := $(shell which $(CC) | xargs file)
 		ifeq ($(lastword $(var)),arm64)
-		  CFLAGS := -march=$(ARCH) -O3 -fomit-frame-pointer -fopenmp -m64 -std=c++11
+			CFLAGS := -march=$(ARCH) -O3 -fomit-frame-pointer -fopenmp -std=c++11
 		endif
 	endif
 endif
 
-COMPILE_COMMAND := $(CC) $(CFLAGS) $(DEPS_CFLAGS)
+# Build
+COMPILE_COMMAND := $(CC) $(CFLAGS) $(INCLUDES)
 
-SRC_DIR := "./"
+# Objects
+OBJECTS := dfba_Metabolite.o dfba_Reaction.o dfba_Solution.o dfba_Model.o
 
-vpath %.o     $(SRC_DIR)
-vpath %.cpp   $(SRC_DIR) 
-vpath %.h     $(SRC_DIR) 
+# Targets
+all: libFBA test_sbml test_clp test_fba
 
-# ALL_OBJECTS := dfba_Metabolite.o dfba_Reaction.o dfba_Solution.o dfba_Model.o dfba_intracellular.o
-ALL_OBJECTS := dfba_Metabolite.o dfba_Reaction.o dfba_Solution.o dfba_Model.o 
+libFBA:
+	python3 ../../../beta/setup_fba.py --pkg libsbml --arch linux-x64
+	python3 ../../../beta/setup_fba.py --pkg coin-or --arch linux-x64
 
-make_lib: libFBA $(ALL_OBJECTS)
-all: make_lib test_sbml test_clp test_fba
+%.o: $(SRC_DIR)/%.cpp
+	$(COMPILE_COMMAND) -c $< -o $@
 
-# $(ALL_OBJECTS): %.o: %.cpp %.h
-# 	$(COMPILE_COMMAND) $(LD_PATH) $(WIN_LD_FLAG) $(LIBS) -c $< -o $(BUILD_DIR)/$(@F)
+test_sbml: libFBA $(OBJECTS) main_test_sbml.cpp
+	$(COMPILE_COMMAND) -o $@ $(OBJECTS) main_test_sbml.cpp $(LIBDIRS) $(WIN_LD_FLAG) $(LIBS)
+	@echo "Created $@"
 
-test_sbml: libFBA $(ALL_OBJECTS) ./main_test_sbml.cpp
-	$(COMPILE_COMMAND) -o test_sbml $(ALL_OBJECTS) main_test_sbml.cpp $(LD_PATH) $(WIN_LD_FLAG) $(LIBS)
-	@echo created $(PROGRAM_NAME)
+test_clp: libFBA $(OBJECTS) main_test_clp.cpp
+	$(COMPILE_COMMAND) -o $@ $(OBJECTS) main_test_clp.cpp $(LIBDIRS) $(WIN_LD_FLAG) $(LIBS)
+	@echo "Created $@"
+
+test_warmstart: libFBA $(ALL_OBJECTS) ./main_test_warmstart.cpp
+	$(COMPILE_COMMAND) -o test_warmstart $(ALL_OBJECTS) main_test_warmstart.cpp $(LD_PATH) $(WIN_LD_FLAG) $(LIBS)
+	@echo "created test_warmstart"
 	@echo
 
-test_clp: libFBA $(ALL_OBJECTS) ./main_test_clp.cpp
-	$(COMPILE_COMMAND) -o test_clp $(ALL_OBJECTS) main_test_clp.cpp $(LD_PATH) $(WIN_LD_FLAG) $(LIBS)
-	@echo created $(PROGRAM_NAME)
-	@echo
-
-test_fba: libFBA $(ALL_OBJECTS) ./main_test_fba.cpp
-	$(COMPILE_COMMAND) -o test_fba $(ALL_OBJECTS) main_test_fba.cpp $(LD_PATH) $(WIN_LD_FLAG) $(LIBS)
-	@echo created $(PROGRAM_NAME)
-	@echo
-
-
-# FBA addon modules
-libFBA: 
-	python3 ../../../beta/setup_fba.py --pkg libsbml --arch $(PKG_ARCH)
-	python3 ../../../beta/setup_fba.py --pkg coin-or --arch $(PKG_ARCH)
-
-dfba_intracellular.o: ../src/dfba_intracellular.cpp
-	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c ../src/dfba_intracellular.cpp -o ./dfba_intracellular.o
-
-dfba_Model.o: ../src/dfba_Model.cpp
-	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c ../src/dfba_Model.cpp -o ./dfba_Model.o
-
-dfba_Reaction.o: ../src/dfba_Reaction.cpp
-	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c ../src/dfba_Reaction.cpp -o ./dfba_Reaction.o
-
-dfba_Metabolite.o: ../src/dfba_Metabolite.cpp
-	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c ../src/dfba_Metabolite.cpp -o ./dfba_Metabolite.o
-
-dfba_Solution.o: ../src/dfba_Solution.cpp
-	$(COMPILE_COMMAND) $(ADDFLAGS) $(INC) $(LIBS) -c ../src/dfba_Solution.cpp -o ./dfba_Solution.o
-
+test_fba: libFBA $(OBJECTS) main_test_fba.cpp
+	$(COMPILE_COMMAND) -o $@ $(OBJECTS) main_test_fba.cpp $(LIBDIRS) $(WIN_LD_FLAG) $(LIBS)
+	@echo "Created $@"
 
 clean:
-	rm -f *.o
-	rm -f ./test_*
+	rm -f *.o test_sbml test_clp test_fba
