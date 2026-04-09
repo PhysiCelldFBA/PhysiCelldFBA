@@ -108,8 +108,26 @@ void setup_microenvironment(void)
 
 void setup_tissue(void)
 {
-	// load cells from your CSV file
-	load_cells_from_pugixml();
+
+	Cell_Definition* pCD = find_cell_definition( "ecoli");
+	double cell_radius = pCD->phenotype.geometry.radius; 
+	double cell_spacing = 0.95 * 2.0 * cell_radius; 
+	
+	double colony_radius = parameters.doubles("colony_radius"); // 250.0; 
+	
+	Cell* pCell = NULL; 
+	
+	std::vector<std::vector<double>> positions = create_cell_disc_positions(cell_radius, colony_radius); 
+	std::cout << "creating " << positions.size() << " closely-packed colony cells ... " << std::endl; 
+	
+		
+	for( int i=0; i < positions.size(); i++ )
+	{
+		pCell = create_cell(*pCD); // tumor cell 
+		pCell->assign_position( positions[i] );
+	}
+	
+	
 	return; 
 }
 
@@ -117,13 +135,62 @@ void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phe
 
 	PhysiCelldFBA::dFBAIntracellular* dfba_model = static_cast<PhysiCelldFBA::dFBAIntracellular*>(phenotype.intracellular);
 
-		pCell->custom_data["growth_rate"] = dfba_model->get_growth_rate();
-		std::vector<double>& density_vector = pCell->nearest_density_vector();
-	    for (const auto& exchange : dfba_model->substrate_exchanges) {
-        	const PhysiCelldFBA::ExchangeFluxData& ex = exchange.second;
-			pCell->custom_data[ex.fba_flux_id] = dfba_model->get_flux_value(ex.fba_flux_id);
-		}
+	std::vector<double>& density_vector = pCell->nearest_density_vector();
+	for (const auto& exchange : dfba_model->substrate_exchanges) {
+		const PhysiCelldFBA::ExchangeFluxData& ex = exchange.second;
+		pCell->custom_data[ex.fba_flux_id] = dfba_model->get_flux_value(ex.fba_flux_id);
+	}
+
+	pCell->custom_data["growth_rate"] = dfba_model->get_growth_rate();
+
 	return;
+}
+
+
+std::vector<std::vector<double>> create_cell_disc_positions(double cell_radius, double disc_radius)
+{	 
+	double cell_spacing = 0.95 * 2.0 * cell_radius; 
+	
+	double x = 0.0; 
+	double y = 0.0; 
+	double x_outer = 0.0;
+
+	std::vector<std::vector<double>> positions;
+	std::vector<double> tempPoint(3,0.0);
+	
+	int n = 0; 
+	while( y < disc_radius )
+	{
+		x = 0.0; 
+		if( n % 2 == 1 )
+		{ x = 0.5 * cell_spacing; }
+		x_outer = sqrt( disc_radius*disc_radius - y*y ); 
+		
+		while( x < x_outer )
+		{
+			tempPoint[0]= x; tempPoint[1]= y;	tempPoint[2]= 0.0;
+			positions.push_back(tempPoint);			
+			if( fabs( y ) > 0.01 )
+			{
+				tempPoint[0]= x; tempPoint[1]= -y;	tempPoint[2]= 0.0;
+				positions.push_back(tempPoint);
+			}
+			if( fabs( x ) > 0.01 )
+			{ 
+				tempPoint[0]= -x; tempPoint[1]= y;	tempPoint[2]= 0.0;
+				positions.push_back(tempPoint);
+				if( fabs( y ) > 0.01 )
+				{
+					tempPoint[0]= -x; tempPoint[1]= -y;	tempPoint[2]= 0.0;
+					positions.push_back(tempPoint);
+				}
+			}
+			x += cell_spacing; 
+		}		
+		y += cell_spacing * sqrt(3.0)/2.0; 
+		n++; 
+	}
+	return positions;
 }
 
 
@@ -167,7 +234,7 @@ std::vector<std::string> my_coloring_function( Cell* pCell )
 		return output;
 	}
 
-	if (pCell->custom_data["growth_rate"] > 0.0)
+	if (dfba_model->get_growth_rate()  > 0.0)
 	{
 		double normalized_growth_rate = dfba_model->get_growth_rate() / max_growth_rate;	
 		int red_blue = (int)(255.0 * (1.0 - normalized_growth_rate));

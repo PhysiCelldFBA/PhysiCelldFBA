@@ -100,6 +100,9 @@ void setup_microenvironment( void );
 // custom function to update custom cell variables based on dFBA results
 void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt );
 
+// helper function to create a disc of cells of a given radius
+std::vector<std::vector<double>> create_cell_disc_positions(double cell_radius, double disc_radius);
+
 // custom coloring function for cells
 std::vector<std::string> my_coloring_function( Cell* );
 
