@@ -339,7 +339,7 @@
     <initial_conditions>
         <cell_positions type="csv" enabled="true">
             <folder>./config</folder>
-            <filename>cells_2.csv</filename>
+            <filename>cells_large_scale.csv</filename>
         </cell_positions>
     </initial_conditions>
 
