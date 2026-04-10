@@ -30,12 +30,7 @@ class dFBAReaction;
 
 class dFBAModel
 {
-	public:
-		/** \brief Constraint-Based Model Class to perform FBA*/
-		bool initialized =false;
-
-		std::string id;
-
+	p
 		/** \brief vector of metabolite objects*/
 		std::vector<dFBAMetabolite*> metabolites;
 

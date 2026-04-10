@@ -183,6 +183,17 @@ class dFBAIntracellular : public PhysiCell::Intracellular
 	void parse_death_model(pugi::xml_node& node);
 	void initLpSolver();
 
+	void setObjectiveCoefficient(std::string reaction_id, double coefficient) {
+		this->sbml_model.setObjectiveCoefficient(reaction_id, coefficient);
+	}
+
+	void clearObjective() {
+		this->sbml_model.clearObjective();
+	}
+
+	void restoreObjectiveState() {
+		this->sbml_model.restoreObjectiveState();
+	}
 
 	// libroadrunner specifics
 		

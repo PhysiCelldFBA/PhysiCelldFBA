@@ -62,16 +62,15 @@ dFBAIntracellular::dFBAIntracellular(const dFBAIntracellular& copy) : Intracellu
     max_growth_rate = copy.max_growth_rate;
     current_growth_rate = copy.current_growth_rate;
     next_dfba_run = copy.next_dfba_run;
-    dfba_time_step = copy.dfba_time_step; // Copy the time step
+    dfba_time_step = copy.dfba_time_step;
 
     // Deep copy the model instead of shallow copy
     sbml_model.deepCopy(copy.sbml_model);
 
-    // Copy substrate_exchanges (map is copied by value, which is fine here)
     substrate_exchanges = copy.substrate_exchanges;
 
-    // Copy the initialization flag
     is_initialized = copy.is_initialized;
+    // Copy death-related parameters
     use_metabolic_death = copy.use_metabolic_death;
 	death_type = copy.death_type;
 	death_trigger_flux = copy.death_trigger_flux;
@@ -434,6 +433,9 @@ void dFBAIntracellular::initialize_intracellular_from_pugixml(pugi::xml_node& no
         }
     }
 
+    // Save original objective state after model is loaded
+    this->sbml_model.saveObjectiveState();
+
     std::cout << "Done!" << std::endl;
     std::cout << "===================================================" << std::endl;
 }
@@ -570,8 +572,9 @@ void dFBAIntracellular::update_dfba_outputs(PhysiCell::Cell* pCell, PhysiCell::P
     // Metabolic-dependent death check
     //std::cout << "Cell ready to die? --> " << this->flag_for_death << std::endl;
     //std::cout << "Death parameters: " << this->use_metabolic_death << " " << this->death_trigger_flux << " " << this->death_flux_threshold << " " << this->death_rate_increase << std::endl;
-    static int nApoptosis = phenotype.death.find_death_model_index(PhysiCell::PhysiCell_constants::apoptosis_death_model );
-    static int nNecrosis = phenotype.death.find_death_model_index(PhysiCell::PhysiCell_constants::necrosis_death_model );
+    // Recalculate per cell (not static) to avoid stale indices
+    int nApoptosis = phenotype.death.find_death_model_index(PhysiCell::PhysiCell_constants::apoptosis_death_model );
+    int nNecrosis = phenotype.death.find_death_model_index(PhysiCell::PhysiCell_constants::necrosis_death_model );
 
     if(this->flag_for_death && this->use_metabolic_death)
     {
