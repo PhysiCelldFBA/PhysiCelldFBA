@@ -64,8 +64,8 @@ dFBAIntracellular::dFBAIntracellular(const dFBAIntracellular& copy) : Intracellu
     next_dfba_run = copy.next_dfba_run;
     dfba_time_step = copy.dfba_time_step; // Copy the time step
 
-    // Copy sbml_model
-    sbml_model = copy.sbml_model;
+    // Deep copy the model instead of shallow copy
+    sbml_model.deepCopy(copy.sbml_model);
 
     // Copy substrate_exchanges (map is copied by value, which is fine here)
     substrate_exchanges = copy.substrate_exchanges;

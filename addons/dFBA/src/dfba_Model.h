@@ -158,8 +158,16 @@ class dFBAModel
 		double getObjectiveValue();
 
 		dFBASolution getSolution(){ return this->solution; }
+
+		void setObjectiveCoefficient(std::string rId, double coefficient);
+		void clearObjective();
+
+		// Deep copy from another model (cleans up existing data first)
+		void deepCopy(const dFBAModel& source);
+
+		// Save/restore objective function state
+		void saveObjectiveState();
+		void restoreObjectiveState();
 };
-
-
 
 #endif
