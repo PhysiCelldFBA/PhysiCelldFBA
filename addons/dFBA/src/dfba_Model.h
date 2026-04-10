@@ -30,9 +30,18 @@ class dFBAReaction;
 
 class dFBAModel
 {
-	p
+	private:
+		/** \brief Model ID */
+		std::string id;
+
 		/** \brief vector of metabolite objects*/
 		std::vector<dFBAMetabolite*> metabolites;
+
+		/** \brief Saved objective reaction ID for restore */
+		std::string original_objective_reaction;
+
+		/** \brief Saved objective coefficients for restore */
+		std::map<std::string, double> original_objective_coefficients;
 
 		/** \brief map between metabolites' ids and metabolites' references **/
 		std::map<std::string, int> metaboliteIndexer;
