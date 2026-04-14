@@ -548,6 +548,11 @@ void dFBAIntracellular::update_dfba_inputs( PhysiCell::Cell* pCell, PhysiCell::P
 }
 
 void dFBAIntracellular::update(){
+    // Check if we should skip standard biomass optimization
+    if (this->skip_standard_optimization) {
+        this->skip_standard_optimization = false; // Reset for next round
+        return;
+    }
     // Only run dFBA if current_time >= next_dfba_run
     dFBASolution solution = this->sbml_model.optimize();
     //next_dfba_run = PhysiCell::PhysiCell_globals.current_time + dfba_time_step;
@@ -716,6 +721,21 @@ void dFBAIntracellular::update_dfba_outputs(PhysiCell::Cell* pCell, PhysiCell::P
 
     return;
 }
+
+dFBASolution dFBAIntracellular::optimize_for_objective(std::string reaction_id, double coefficient) {
+    // Temporarily switch objective
+    this->sbml_model.clearObjective();
+    this->sbml_model.setObjectiveCoefficient(reaction_id, coefficient);
+    
+    // Run optimization
+    dFBASolution solution = this->sbml_model.optimize();
+    
+    // Restore original objective immediately
+    this->sbml_model.restoreObjectiveState();
+    
+    return solution;  // Return full solution (includes status!)
+}
+
 
 double dFBAIntracellular::get_flux_value(std::string reaction_name)
 {
