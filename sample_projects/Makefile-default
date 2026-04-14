@@ -323,7 +323,7 @@ bacterial-colony:
 		mkdir ./scripts/
 	cp ./sample_projects_intracellular/fba/bacterial_colony/scripts/* ./scripts/
 
-ecoli-acetic-switch-sample:
+metabolic_driven_motility:
 	cp ./sample_projects_intracellular/fba/metabolic_driven_motility/custom_modules/* ./custom_modules/
 	touch main.cpp && cp main.cpp main-backup.cpp
 	cp ./sample_projects_intracellular/fba/metabolic_driven_motility/main.cpp ./main.cpp
