@@ -77,7 +77,7 @@ list-projects:
 	@echo "                 asymmetric-division-sample immune-function-sample episode-sample"
 	@echo ""
 	@echo "Sample intracellular projects: template_BM ode-energy-sample physiboss-cell-lines-sample"
-	@echo "                 cancer-metabolism-sample physiboss-tutorial physiboss-tutorial-invasion bacterial-colony"
+	@echo "                 cancer-metabolism-sample physiboss-tutorial physiboss-tutorial-invasion bacterial-colony metabolic_driven_motility"
 	@echo ""
 	
 template:
@@ -322,6 +322,17 @@ bacterial-colony:
 	cp ./sample_projects_intracellular/fba/bacterial_colony/config/* ./config/
 		mkdir ./scripts/
 	cp ./sample_projects_intracellular/fba/bacterial_colony/scripts/* ./scripts/
+
+ecoli-acetic-switch-sample:
+	cp ./sample_projects_intracellular/fba/metabolic_driven_motility/custom_modules/* ./custom_modules/
+	touch main.cpp && cp main.cpp main-backup.cpp
+	cp ./sample_projects_intracellular/fba/metabolic_driven_motility/main.cpp ./main.cpp
+	cp Makefile Makefile-backup
+	cp ./sample_projects_intracellular/fba/metabolic_driven_motility/Makefile ./
+	cp ./config/PhysiCell_settings.xml ./config/PhysiCell_settings-backup.xml
+	cp ./sample_projects_intracellular/fba/metabolic_driven_motility/config/* ./config/
+		mkdir ./scripts/
+	cp ./sample_projects_intracellular/fba/metabolic_driven_motility/scripts/* ./scripts/
 
 template_BM:
 	cp ./sample_projects_intracellular/boolean/template_BM/custom_modules/* ./custom_modules/
