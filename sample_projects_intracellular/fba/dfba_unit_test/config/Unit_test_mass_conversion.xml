@@ -23,7 +23,7 @@
     </domain>
 
     <overall>
-        <max_time units="min">600</max_time>
+        <max_time units="min">240</max_time>
         <time_units>min</time_units>
         <space_units>micron</space_units>
         <dt_diffusion units="min">0.01</dt_diffusion>
@@ -140,7 +140,7 @@
     </microenvironment_setup>
 
     <cell_definitions>
-        <cell_definition name="ecoli_1" ID="0">
+        <cell_definition name="ecoli1" ID="0">
             <phenotype>
                 <cycle code="5" name="live">
                     <phase_transition_rates units="1/min">
@@ -281,8 +281,8 @@
                     <damage_repair_rate units="1/min">0.0</damage_repair_rate>
                 </cell_integrity>
                 <intracellular type="dfba">
-                    <sbml_filename>./config/Ecoli_core.xml</sbml_filename>
                     <settings>
+                        <sbml_filename>./config/Ecoli_core.xml</sbml_filename>
                         <intracellular_dt>0.01</intracellular_dt>
                     </settings>
                     <transport_model>
