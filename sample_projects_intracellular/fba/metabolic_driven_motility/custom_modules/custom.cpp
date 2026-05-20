@@ -70,6 +70,7 @@
 #include "../addons/dFBA/src/dfba_intracellular.h"
 #endif
 #include "custom.h"
+#include <unordered_set>
 
 
 void custom_atp_optimization(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt)
@@ -77,43 +78,44 @@ void custom_atp_optimization(PhysiCell::Cell* pCell, PhysiCell::Phenotype& pheno
     auto* dfba =
         static_cast<PhysiCelldFBA::dFBAIntracellular*>(pCell->phenotype.intracellular);
 
-	// std::cout << "Running custom ATP optimization for cell " << pCell->ID << std::endl;
+    // basal_atp_flux should match the SBML R_ATPM lower bound (8.39 for E. coli core).
+    // Only ATP *above* this floor is "free" for motility; below it the FBA problem
+    // becomes infeasible and the cell dies anyway.
+    static double basal_atp_flux       = parameters.doubles("basal_atp_flux");
+    // mmol ATP / gDW / h
+    static double vmax                 = parameters.doubles("ecoli_vmax");
+    // micron / min
+    static double motility_cost_at_vmax = parameters.doubles("motility_cost_at_vmax");
+    // mmol ATP / gDW / h — surplus above basal needed to reach vmax
+    static double phi_atp_hill         = parameters.doubles("phi_atp_hill");
+    // Hill exponent shaping ATP fraction to speed (1=linear, n>1=sigmoidal)
 
     dFBASolution solution = dfba->optimize_for_objective("R_ATPM", 1.0);
-
-	// std::cout << "Optimization status: " << solution.getStatus() << std::endl;
 
     if (solution.status == "optimal")
     {
         double atp_flux = solution.getObjectiveValue();
         // mmol ATP / gDW / h
 
-        double cell_dry_weight_gDW =
-            (1.0 - phenotype.volume.fluid_fraction)
-            * phenotype.volume.total
-            * dfba->cell_density
-            * 1e-12;
-        // gDW / cell
-
-        static double basal_atp_flux = parameters.doubles("basal_atp_flux");
-        // mmol ATP / gDW / h
-
         double motility_atp_flux = std::max(0.0, atp_flux - basal_atp_flux);
-        // mmol ATP / gDW / h
+        // mmol ATP / gDW / h — surplus above basal maintenance
 
-        double motility_atp_rate_cell = motility_atp_flux * cell_dry_weight_gDW;
-        // mmol ATP / cell / h
+        double speed_fraction = 0.0;
+        if (motility_cost_at_vmax > 0.0)
+            speed_fraction = motility_atp_flux / motility_cost_at_vmax;
+        speed_fraction = std::max(0.0, std::min(1.0, speed_fraction));
 
-        double motility_atp_used_this_step = motility_atp_rate_cell * dt / 60.0;
-        // mmol ATP / cell / step
+        // Hill shaping: spreads the ATP→speed response across the gradient
+        if (phi_atp_hill != 1.0)
+            speed_fraction = std::pow(speed_fraction, phi_atp_hill);
 
-        pCell->custom_data["atp_flux"] = atp_flux;
-        pCell->custom_data["motility_atp_flux"] = motility_atp_flux;
-        pCell->custom_data["motility_atp_rate_cell"] = motility_atp_rate_cell;
-        pCell->custom_data["motility_atp_used_this_step"] = motility_atp_used_this_step;
+        pCell->custom_data["atp_flux"]              = atp_flux;
+        pCell->custom_data["motility_atp_flux"]     = motility_atp_flux;
+        pCell->custom_data["motility_speed_fraction"] = speed_fraction;
+
+        phenotype.motility.migration_speed = vmax * speed_fraction;
 
         dfba->current_growth_rate = dfba->sbml_model.getReaction("R_Biomass_Ecoli_core")->getFluxValue();
-
         dfba->flag_for_death = false;
     }
     else if (solution.status == "unknown")
@@ -123,11 +125,11 @@ void custom_atp_optimization(PhysiCell::Cell* pCell, PhysiCell::Phenotype& pheno
     }
     else
     {
-        pCell->custom_data["atp_flux"] = 0.0;
-		pCell->custom_data["motility_atp_flux"] = 0.0;
-		pCell->custom_data["motility_atp_rate_cell"] = 0.0;
-		pCell->custom_data["motility_atp_used_this_step"] = 0.0;
-		pCell->custom_data["motility_speed_fraction"] = 0.0;
+        pCell->custom_data["atp_flux"]               = 0.0;
+        pCell->custom_data["motility_atp_flux"]      = 0.0;
+        pCell->custom_data["motility_speed_fraction"] = 0.0;
+
+        phenotype.motility.migration_speed = 0.0;
 
         dfba->flag_for_death = true;
         dfba->current_growth_rate = 0.0;
@@ -172,11 +174,12 @@ void create_cell_types(void)
 
 // File-scope statics required because bulk_supply_*_function are raw function
 // pointers and cannot bind capturing lambdas.
-static int    _src_glucose_idx  = -1;
-static int    _src_voxel[3]     = { -1, -1, -1 };
-static double _src_glucose_conc = 0.0;
+static int                     _src_glucose_idx  = -1;
+static std::vector<int>        _src_voxels;            // all active source voxel indices
+static std::unordered_set<int> _src_voxel_set;         // fast membership test for lambdas
+static double                  _src_glucose_conc = 0.0;
 
-// Register three glucose secretion nodes at fixed positions.
+// Register four glucose secretion nodes at fixed positions.
 // The supply rate and target concentration are both set to the initial
 // glucose concentration, so each source voxel is continuously driven
 // back to its starting level.
@@ -185,44 +188,66 @@ void setup_secretion_nodes( void )
 {
 	_src_glucose_idx = microenvironment.find_density_index( "glucose" );
 
-	std::vector<double> p0 = {-100.0,  100.0, 0.0};
-	std::vector<double> p1 = {-100.0, -100.0, 0.0};
-	std::vector<double> p2 = { 100.0,    0.0, 0.0};
-	_src_voxel[0] = microenvironment.nearest_voxel_index( p0 );
-	_src_voxel[1] = microenvironment.nearest_voxel_index( p1 );
-	_src_voxel[2] = microenvironment.nearest_voxel_index( p2 );
+	// Source centre positions
+	std::vector<std::vector<double>> centers = {
+		{-175.0,  175.0, 0.0},
+		{-175.0, -175.0, 0.0},
+		{ 175.0,  175.0, 0.0},
+		{ 175.0, -175.0, 0.0}
+	};
 
-	_src_glucose_conc = microenvironment.density_vector( _src_voxel[0] )[_src_glucose_idx];
+	// Neighbourhood radius: 1 = single voxel, 2 = Moore (3x3), 3 = 5x5, ...
+	int radius = parameters.ints("glucose_source_radius");
+	double dx  = microenvironment.mesh.dx;
+	double dy  = microenvironment.mesh.dy;
+
+	_src_voxels.clear();
+	_src_voxel_set.clear();
+
+	for( auto& c : centers )
+	{
+		for( int di = -(radius - 1); di <= (radius - 1); di++ )
+		{
+			for( int dj = -(radius - 1); dj <= (radius - 1); dj++ )
+			{
+				std::vector<double> p = { c[0] + di * dx, c[1] + dj * dy, c[2] };
+				int idx = microenvironment.nearest_voxel_index( p );
+				if( idx >= 0 && _src_voxel_set.find(idx) == _src_voxel_set.end() )
+				{
+					_src_voxel_set.insert( idx );
+					_src_voxels.push_back( idx );
+				}
+			}
+		}
+	}
+
+	_src_glucose_conc = parameters.doubles("glucose_source_concentration");
 
 	std::cout << "[setup_secretion_nodes] glucose substrate index : " << _src_glucose_idx << std::endl;
-	std::cout << "[setup_secretion_nodes] initial glucose conc    : " << _src_glucose_conc << std::endl;
-	double p0x = microenvironment.voxels(_src_voxel[0]).center[0];
-	double p0y = microenvironment.voxels(_src_voxel[0]).center[1];
-	double p1x = microenvironment.voxels(_src_voxel[1]).center[0];
-	double p1y = microenvironment.voxels(_src_voxel[1]).center[1];
-	double p2x = microenvironment.voxels(_src_voxel[2]).center[0];
-	double p2y = microenvironment.voxels(_src_voxel[2]).center[1];
-	std::cout << "[setup_secretion_nodes] source voxel 0: index=" << _src_voxel[0]
-	          << "  center=(" << p0x << ", " << p0y << ")" << std::endl;
-	std::cout << "[setup_secretion_nodes] source voxel 1: index=" << _src_voxel[1]
-	          << "  center=(" << p1x << ", " << p1y << ")" << std::endl;
-	std::cout << "[setup_secretion_nodes] source voxel 2: index=" << _src_voxel[2]
-	          << "  center=(" << p2x << ", " << p2y << ")" << std::endl;
+	std::cout << "[setup_secretion_nodes] source glucose conc     : " << _src_glucose_conc << " mM" << std::endl;
+	std::cout << "[setup_secretion_nodes] source radius (layers)  : " << radius << std::endl;
+	std::cout << "[setup_secretion_nodes] total source voxels     : " << _src_voxels.size() << std::endl;
+	for( int k = 0; k < (int)_src_voxels.size(); k++ )
+	{
+		double cx = microenvironment.voxels(_src_voxels[k]).center[0];
+		double cy = microenvironment.voxels(_src_voxels[k]).center[1];
+		std::cout << "[setup_secretion_nodes]   voxel " << k
+		          << ": index=" << _src_voxels[k]
+		          << "  center=(" << cx << ", " << cy << ")" << std::endl;
+	}
 
-	microenvironment.bulk_supply_rate_function = []( 
+	microenvironment.bulk_supply_rate_function = [](
 		Microenvironment*, int n, std::vector<double>* dest )
 	{
 		(*dest)[_src_glucose_idx] =
-			( n == _src_voxel[0] || n == _src_voxel[1] || n == _src_voxel[2] )
-			? _src_glucose_conc : 0.0;
+			(_src_voxel_set.count(n) > 0) ? _src_glucose_conc : 0.0;
 	};
 
 	microenvironment.bulk_supply_target_densities_function = [](
 		Microenvironment*, int n, std::vector<double>* dest )
 	{
 		(*dest)[_src_glucose_idx] =
-			( n == _src_voxel[0] || n == _src_voxel[1] || n == _src_voxel[2] )
-			? _src_glucose_conc : 0.0;
+			(_src_voxel_set.count(n) > 0) ? _src_glucose_conc : 0.0;
 	};
 }
 
@@ -308,66 +333,32 @@ void metabolic_bound_migration_rule(Cell* pCell, Phenotype& phenotype, double dt
     static int glucose_index = microenvironment.find_density_index("glucose");
     double glucose_conc = pCell->nearest_density_vector()[glucose_index];
 
-    static double glucose_threshold_low =
-        parameters.doubles("glucose_threshold_low");
-    static double glucose_threshold_high =
-        parameters.doubles("glucose_threshold_high");
-
-    static double vmax =
-        parameters.doubles("ecoli_vmax");
-    // micron / min
-
-    static double motility_cost_at_vmax =
-        parameters.doubles("motility_cost_at_vmax");
-    // mmol ATP / gDW / h
+    static double glucose_threshold_low  = parameters.doubles("glucose_threshold_low");
+    static double glucose_threshold_high = parameters.doubles("glucose_threshold_high");
 
     double mode = pCell->custom_data["metabolic_mode"];
     // 0 = biomass mode, 1 = ATP mode
 
-    // Hysteresis
+    // Hysteretic mode switch only.  Speed is set inside custom_atp_optimization
+    // at every intracellular step (intracellular_dt), so there is no stale read here.
     if (mode < 0.5 && glucose_conc < glucose_threshold_low)
     {
         pCell->custom_data["metabolic_mode"] = 1.0;
         pCell->functions.custom_optimization = custom_atp_optimization;
-
-        std::cout << "Cell " << pCell->ID
-                  << " switched to ATP optimization (survival mode)" << std::endl;
     }
     else if (mode > 0.5 && glucose_conc > glucose_threshold_high)
     {
         pCell->custom_data["metabolic_mode"] = 0.0;
         pCell->functions.custom_optimization = NULL;
 
-        pCell->custom_data["atp_flux"] = 0.0;
-        pCell->custom_data["motility_atp_flux"] = 0.0;
-        pCell->custom_data["motility_atp_rate_cell"] = 0.0;
-        pCell->custom_data["motility_atp_used_this_step"] = 0.0;
+        // Back to growth mode: clear ATP-motility state and stop moving.
+        pCell->custom_data["atp_flux"]               = 0.0;
+        pCell->custom_data["motility_atp_flux"]      = 0.0;
         pCell->custom_data["motility_speed_fraction"] = 0.0;
+        phenotype.motility.migration_speed = 0.0;
 
         std::cout << "Cell " << pCell->ID
                   << " switched to biomass optimization (growth mode)" << std::endl;
-    }
-
-    if (pCell->custom_data["metabolic_mode"] > 0.5)
-    {
-        double motility_atp_flux = pCell->custom_data["motility_atp_flux"];
-        // mmol ATP / gDW / h
-
-        double speed_fraction = 0.0;
-        if (motility_cost_at_vmax > 0.0)
-        {
-            speed_fraction = motility_atp_flux / motility_cost_at_vmax;
-        }
-
-        speed_fraction = std::max(0.0, std::min(1.0, speed_fraction));
-
-        pCell->custom_data["motility_speed_fraction"] = speed_fraction;
-        phenotype.motility.migration_speed = vmax * speed_fraction;
-    }
-    else
-    {
-        pCell->custom_data["motility_speed_fraction"] = 0.0;
-        phenotype.motility.migration_speed = 0.0;
     }
 
     return;
