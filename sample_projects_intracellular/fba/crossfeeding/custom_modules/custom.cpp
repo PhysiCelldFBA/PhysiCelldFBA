@@ -65,8 +65,95 @@
 ###############################################################################
 */
 
+// libSBML and PhysiCell both use the name "Parameter"; parse SBML headers before
+// PhysiCell_settings.h's template Parameter is visible (see sbmlfwd.h typedefs).
+#include <sbml/SBMLTypes.h>
+
 #include "custom.h"
-//#include "../addons/dFBA/src/dfba_intracellular.h"
+#include <cmath>
+#include "../addons/dFBA/src/dfba_intracellular.h"
+
+namespace {
+
+double get_dfba_infeasible_flag_for_cell(PhysiCell::Cell* pCell)
+{
+	if (!pCell || !pCell->phenotype.intracellular)
+	{
+		return 0.0;
+	}
+	auto* dfba = dynamic_cast<PhysiCelldFBA::dFBAIntracellular*>(pCell->phenotype.intracellular);
+	if (!dfba)
+	{
+		return 0.0;
+	}
+	return dfba->flag_for_death ? 1.0 : 0.0;
+}
+
+void set_substrate_dirichlet_value_on_all_dirichlet_voxels(int substrate_index, double value)
+{
+	if (substrate_index < 0)
+	{
+		return;
+	}
+	for (unsigned int n = 0; n < microenvironment.mesh.voxels.size(); n++)
+	{
+		if (microenvironment.mesh.voxels[n].is_Dirichlet)
+		{
+			microenvironment.update_dirichlet_node(static_cast<int>(n), substrate_index, value);
+		}
+	}
+}
+
+bool glucose_refeed_pulse_active(double t_min, double first_pulse_min, double period_min, double pulse_duration_min)
+{
+	if (t_min + 1e-12 < first_pulse_min)
+	{
+		return false;
+	}
+	if (period_min <= 1e-12)
+	{
+		return (t_min < first_pulse_min + pulse_duration_min);
+	}
+	double phase = std::fmod(t_min - first_pulse_min, period_min);
+	return (phase < pulse_duration_min + 1e-9);
+}
+
+void apply_legacy_nutrient_reintroduction_window(void)
+{
+	if (parameters.strings.find_index("reintroduced_nutrient") == -1 ||
+		parameters.doubles.find_index("reintroduction_start_time") == -1 ||
+		parameters.doubles.find_index("reintroduction_duration") == -1)
+	{
+		return;
+	}
+	int nutrient_index = microenvironment.find_density_index(parameters.strings("reintroduced_nutrient"));
+	if (nutrient_index < 0)
+	{
+		return;
+	}
+	double t = PhysiCell_globals.current_time;
+	double t0 = parameters.doubles("reintroduction_start_time");
+	double dur = parameters.doubles("reintroduction_duration");
+	bool in_window = (t >= t0 && t < t0 + dur);
+	bool active = microenvironment.get_substrate_dirichlet_activation(nutrient_index);
+
+	if (in_window && !active)
+	{
+		std::cout << parameters.strings("reintroduced_nutrient") << " Dirichlet activated at t=" << t << std::endl;
+		microenvironment.set_substrate_dirichlet_activation(nutrient_index, true);
+	}
+	else if (t < t0 && active)
+	{
+		microenvironment.set_substrate_dirichlet_activation(nutrient_index, false);
+	}
+	else if (t >= t0 + dur && active)
+	{
+		std::cout << parameters.strings("reintroduced_nutrient") << " Dirichlet deactivated at t=" << t << std::endl;
+		microenvironment.set_substrate_dirichlet_activation(nutrient_index, false);
+	}
+}
+
+} // namespace
 
 
 void create_cell_types(void)
@@ -113,6 +200,7 @@ void create_cell_types(void)
 void setup_microenvironment(void)
 {
 	initialize_microenvironment();
+	apply_initial_glucose_refeed_setup();
 	return;
 }
 
@@ -160,20 +248,58 @@ void setup_tissue(void)
 	
 	// load cells from your CSV file
 	load_cells_from_pugixml();
-	
+
+	// Desynchronize initial cell divisions by assigning each cell a random
+	// starting volume drawn uniformly from [0.5, 1.0] × its reference_volume.
+	// Without this, all cells of the same type start at identical volumes,
+	// grow at the same rate and reach the division threshold simultaneously,
+	// producing a community-wide "division wave" that causes synchronized
+	// spikes in H2/CO2 fluxes every ~doubling time.
+	for( auto pC : *all_cells )
+	{
+		if( pC->phenotype.intracellular == NULL ) { continue; }
+
+		// Retrieve dFBA reference volume via the growth-model parameter
+		double v_ref = pC->phenotype.intracellular->get_parameter_value("reference_volume");
+		if( v_ref <= 0.0 )
+		{
+			// Fall back: use current volume as reference if the parameter
+			// is not exposed (get_parameter_value returns 0 for unknown names)
+			v_ref = pC->phenotype.volume.total;
+		}
+
+		// Random fraction in [0.5, 1.0] — cells span the full first half of
+		// the cell cycle at t = 0, eliminating the synchronised first wave.
+		double frac = 0.5 + 0.5 * UniformRandom();
+		double new_vol = frac * v_ref;
+		if( new_vol > 0.0 )
+		{
+			pC->set_total_volume( new_vol );
+		}
+	}
+
 	return; 
 }
 
 // Cell-type specific intracellular update function for C. beijerinckii
 void post_update_intracellular_c_beijerinckii(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt) {
-	// Set growth rate from intracellular model
-	pCell->custom_data["growth_rate"] = pCell->phenotype.intracellular->get_growth_rate();
+	// Keep a unified output schema across cell types (as declared in PhysiCell_settings_experiment_2.xml)
+	// by always populating the same custom_data keys. For this type, MB_* keys are set to 0.
+	pCell->custom_data["MB_h2_flux"] = 0.0;
+	pCell->custom_data["MB_co2_flux"] = 0.0;
+	pCell->custom_data["MB_acetate_flux"] = 0.0;
+	pCell->custom_data["MB_growth_rate"] = 0.0;
+	pCell->custom_data["MB_fba_infeasible"] = 0.0;
+	pCell->custom_data["methane_flux"] = 0.0;
 	
 	// Debug: Print growth rate and biomass flux for early timepoints
 	if (PhysiCell_globals.current_time < 2.0) {
 		double biomass_flux = 0.0;
 		try {
-			biomass_flux = pCell->phenotype.intracellular->get_flux_value("R_biomass");
+			if (pCell->phenotype.intracellular)
+			{
+				biomass_flux = pCell->phenotype.intracellular->get_flux_value("R_biomass");
+			}
 		} catch (const std::exception& e) {
 			std::cout << "Error getting biomass flux for c_beijerinckii: " << e.what() << std::endl;
 		}
@@ -186,14 +312,32 @@ void post_update_intracellular_c_beijerinckii(PhysiCell::Cell* pCell, PhysiCell:
 	
 	// Set metabolic fluxes specific to C. beijerinckii
 	try {
-		pCell->custom_data["glucose_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_glc_D_e");
-		pCell->custom_data["hydrogen_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_h2_e");
+		if (pCell->phenotype.intracellular)
+		{
+			// Transport model in exp2.xml (C. beijerinckii):
+			// glucose: R_EX_glc_D_e, H2: R_EX_h2_e, CO2: R_EX_co2_e, acetate: R_EX_ac_e
+			pCell->custom_data["glucose_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_glc_D_e");
+			pCell->custom_data["CB_h2_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_h2_e");
+			pCell->custom_data["CB_co2_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_co2_e");
+			pCell->custom_data["CB_acetate_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_ac_e");
+			pCell->custom_data["CB_growth_rate"] = pCell->phenotype.intracellular->get_growth_rate();
+			pCell->custom_data["CB_fba_infeasible"] = get_dfba_infeasible_flag_for_cell(pCell);
+		}
+		else
+		{
+			pCell->custom_data["glucose_flux"] = 0.0;
+			pCell->custom_data["CB_h2_flux"] = 0.0;
+			pCell->custom_data["CB_co2_flux"] = 0.0;
+			pCell->custom_data["CB_acetate_flux"] = 0.0;
+			pCell->custom_data["CB_growth_rate"] = 0.0;
+			pCell->custom_data["CB_fba_infeasible"] = 0.0;
+		}
 		
 		// Debug fluxes for early timepoints (commented out for performance)
 		// if (PhysiCell_globals.current_time < 5.0) {
 		// 	std::cout << "C.beijerinckii ID " << pCell->ID 
 		// 			  << ": Glucose=" << pCell->custom_data["glucose_flux"] 
-		// 			  << ", H2=" << pCell->custom_data["hydrogen_flux"] << std::endl;
+		// 			  << ", H2=" << pCell->custom_data["CB_h2_flux"] << std::endl;
 		// }
 	} catch (const std::exception& e) {
 		std::cout << "Error accessing flux values for c_beijerinckii: " << e.what() << std::endl;
@@ -204,14 +348,23 @@ void post_update_intracellular_c_beijerinckii(PhysiCell::Cell* pCell, PhysiCell:
 
 // Cell-type specific intracellular update function for M. barkeri
 void post_update_intracellular_m_barkeri(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt) {
-	// Set growth rate from intracellular model
-	pCell->custom_data["growth_rate"] = pCell->phenotype.intracellular->get_growth_rate();
+	// Keep unified output schema. For this type, CB_* keys are set to 0.
+	pCell->custom_data["glucose_flux"] = 0.0;
+	pCell->custom_data["CB_h2_flux"] = 0.0;
+	pCell->custom_data["CB_co2_flux"] = 0.0;
+	pCell->custom_data["CB_acetate_flux"] = 0.0;
+	pCell->custom_data["CB_growth_rate"] = 0.0;
+	pCell->custom_data["CB_fba_infeasible"] = 0.0;
 	
 	// Debug: Print growth rate and biomass flux for early timepoints
 	if (PhysiCell_globals.current_time < 2.0) {
 		double biomass_flux = 0.0;
 		try {
-			biomass_flux = pCell->phenotype.intracellular->get_flux_value("R_BIOMASS_Mb_30");
+			// SBML objective / biomass reaction for M. barkeri
+			if (pCell->phenotype.intracellular)
+			{
+				biomass_flux = pCell->phenotype.intracellular->get_flux_value("R_Mb_biomass_65");
+			}
 		} catch (const std::exception& e) {
 			std::cout << "Error getting biomass flux for m_barkeri: " << e.what() << std::endl;
 		}
@@ -224,15 +377,32 @@ void post_update_intracellular_m_barkeri(PhysiCell::Cell* pCell, PhysiCell::Phen
 	
 	// Set metabolic fluxes specific to M. barkeri
 	try {
-		pCell->custom_data["h2_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_h2_e");
-		pCell->custom_data["co2_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_co2_e");
-		pCell->custom_data["methane_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_ch4_e");
+		if (pCell->phenotype.intracellular)
+		{
+			// Transport model in exp2.xml (M. barkeri):
+			// CO2: R_EX_co2_e, H2: R_EX_h2_e, methane: R_EX_ch4_e, acetate: R_EX_ac_e
+			pCell->custom_data["MB_h2_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_h2_e");
+			pCell->custom_data["MB_co2_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_co2_e");
+			pCell->custom_data["MB_acetate_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_ac_e");
+			pCell->custom_data["methane_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_ch4_e");
+			pCell->custom_data["MB_growth_rate"] = pCell->phenotype.intracellular->get_growth_rate();
+			pCell->custom_data["MB_fba_infeasible"] = get_dfba_infeasible_flag_for_cell(pCell);
+		}
+		else
+		{
+			pCell->custom_data["MB_h2_flux"] = 0.0;
+			pCell->custom_data["MB_co2_flux"] = 0.0;
+			pCell->custom_data["MB_acetate_flux"] = 0.0;
+			pCell->custom_data["methane_flux"] = 0.0;
+			pCell->custom_data["MB_growth_rate"] = 0.0;
+			pCell->custom_data["MB_fba_infeasible"] = 0.0;
+		}
 		
 		// Debug fluxes for early timepoints (commented out for performance)
 		// if (PhysiCell_globals.current_time < 10.0) {
 		// 	std::cout << "M.barkeri ID " << pCell->ID 
-		// 			  << ": H2=" << pCell->custom_data["h2_flux"]
-		// 			  << ", CO2=" << pCell->custom_data["co2_flux"]
+		// 			  << ": H2=" << pCell->custom_data["MB_h2_flux"]
+		// 			  << ", CO2=" << pCell->custom_data["MB_co2_flux"]
 		// 			  << ", CH4=" << pCell->custom_data["methane_flux"] << std::endl;
 		// }
 	} catch (const std::exception& e) {
@@ -260,43 +430,104 @@ void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phe
 }
 
 
-// NOT USED
-void reintroduce_nutrients_function () 
+void apply_initial_glucose_refeed_setup(void)
 {
-	if (PhysiCell::parameters.bools.find_index("nutrient_reintroduction") != -1) 
+	if (parameters.bools.find_index("glucose_refeed_enabled") == -1 ||
+		!parameters.bools("glucose_refeed_enabled"))
 	{
-		int nutrient_index = BioFVM::microenvironment.find_density_index(PhysiCell::parameters.strings("reintroduced_nutrient"));
+		return;
+	}
+	std::string sub_name = "glucose";
+	if (parameters.strings.find_index("glucose_refeed_substrate") != -1 &&
+		!parameters.strings("glucose_refeed_substrate").empty())
+	{
+		sub_name = parameters.strings("glucose_refeed_substrate");
+	}
+	int gi = microenvironment.find_density_index(sub_name);
+	if (gi < 0)
+	{
+		std::cout << "Warning: apply_initial_glucose_refeed_setup: substrate \"" << sub_name << "\" not found." << std::endl;
+		return;
+	}
+	if (parameters.bools.find_index("glucose_refeed_start_with_dirichlet_off") != -1 &&
+		parameters.bools("glucose_refeed_start_with_dirichlet_off"))
+	{
+		microenvironment.set_substrate_dirichlet_activation(gi, false);
+		std::cout << "Glucose refeed: initial Dirichlet activation OFF for \"" << sub_name << "\" (index " << gi << ")." << std::endl;
+	}
+}
 
-		if (PhysiCell::parameters.bools("nutrient_reintroduction")){
-			// Activate nutrient boundary at specified time
-			if (
-				(PhysiCell::PhysiCell_globals.current_time >= PhysiCell::parameters.doubles("reintroduction_start_time"))
-				&& (PhysiCell::PhysiCell_globals.current_time < (PhysiCell::parameters.doubles("reintroduction_start_time") + PhysiCell::parameters.doubles("reintroduction_duration")))
-				&& !BioFVM::microenvironment.get_substrate_dirichlet_activation(nutrient_index)
-			)
-			{
-				std::cout << PhysiCell::parameters.strings("reintroduced_nutrient") << " boundary activated at t=" << PhysiCell::PhysiCell_globals.current_time << std::endl;
-				BioFVM::microenvironment.set_substrate_dirichlet_activation(nutrient_index, true);	
-				std::cout << "Boundary condition set at: " << BioFVM::microenvironment.get_substrate_dirichlet_value(nutrient_index, 0) << std::endl;
-			}
-			else if (PhysiCell::PhysiCell_globals.current_time < (PhysiCell::parameters.doubles("reintroduction_start_time")))
-			{
-				BioFVM::microenvironment.set_substrate_dirichlet_activation(nutrient_index, false);
-			}
+void apply_glucose_dirichlet_refeed_schedule(void)
+{
+	double t = PhysiCell_globals.current_time;
 
-			// Deactivate nutrient boundary after the duration
-			if (
-				(PhysiCell::PhysiCell_globals.current_time >= (PhysiCell::parameters.doubles("reintroduction_start_time") + PhysiCell::parameters.doubles("reintroduction_duration")))
-				&& BioFVM::microenvironment.get_substrate_dirichlet_activation(nutrient_index)
-			)
+	if (parameters.bools.find_index("glucose_refeed_enabled") != -1 && parameters.bools("glucose_refeed_enabled"))
+	{
+		std::string sub_name = "glucose";
+		if (parameters.strings.find_index("glucose_refeed_substrate") != -1 &&
+			!parameters.strings("glucose_refeed_substrate").empty())
+		{
+			sub_name = parameters.strings("glucose_refeed_substrate");
+		}
+		int gi = microenvironment.find_density_index(sub_name);
+		if (gi < 0)
+		{
+			return;
+		}
+
+		double first_pulse = 0.0;
+		if (parameters.doubles.find_index("glucose_refeed_first_pulse_time_min") != -1)
+		{
+			first_pulse = parameters.doubles("glucose_refeed_first_pulse_time_min");
+		}
+		double pulse_dur = 120.0;
+		if (parameters.doubles.find_index("glucose_refeed_pulse_duration_min") != -1)
+		{
+			pulse_dur = parameters.doubles("glucose_refeed_pulse_duration_min");
+		}
+		double period = 0.0;
+		if (parameters.doubles.find_index("glucose_refeed_period_min") != -1)
+		{
+			period = parameters.doubles("glucose_refeed_period_min");
+		}
+		double pulse_mM = 1.0;
+		if (parameters.doubles.find_index("glucose_refeed_pulse_dirichlet_mM") != -1)
+		{
+			pulse_mM = parameters.doubles("glucose_refeed_pulse_dirichlet_mM");
+		}
+
+		bool want_on = glucose_refeed_pulse_active(t, first_pulse, period, pulse_dur);
+		bool on_now = microenvironment.get_substrate_dirichlet_activation(gi);
+
+		if (want_on && !on_now)
+		{
+			set_substrate_dirichlet_value_on_all_dirichlet_voxels(gi, pulse_mM);
+			microenvironment.set_substrate_dirichlet_activation(gi, true);
+			std::cout << sub_name << " refeed: Dirichlet ON at t=" << t << " min, boundary target " << pulse_mM << " mM" << std::endl;
+		}
+		else if (!want_on && on_now)
+		{
+			microenvironment.set_substrate_dirichlet_activation(gi, false);
+			std::cout << sub_name << " refeed: Dirichlet OFF at t=" << t << " min" << std::endl;
+		}
+		return;
+	}
+
+	if (parameters.bools.find_index("nutrient_reintroduction") != -1)
+	{
+		if (!parameters.bools("nutrient_reintroduction") &&
+			parameters.strings.find_index("reintroduced_nutrient") != -1)
+		{
+			int ni = microenvironment.find_density_index(parameters.strings("reintroduced_nutrient"));
+			if (ni >= 0 && microenvironment.get_substrate_dirichlet_activation(ni))
 			{
-				std::cout << PhysiCell::parameters.strings("reintroduced_nutrient") << " boundary deactivated at t=" << PhysiCell::PhysiCell_globals.current_time << std::endl;
-				BioFVM::microenvironment.set_substrate_dirichlet_activation(nutrient_index, false);	
+				microenvironment.set_substrate_dirichlet_activation(ni, false);
 			}
-			
-		} else if ( BioFVM::microenvironment.get_substrate_dirichlet_activation(nutrient_index) ){
-			std::cout << PhysiCell::parameters.strings("reintroduced_nutrient") << " boundary forced deactivation at t=" << PhysiCell::PhysiCell_globals.current_time << std::endl;
-			BioFVM::microenvironment.set_substrate_dirichlet_activation(nutrient_index, false);	
+			return;
+		}
+		if (parameters.bools("nutrient_reintroduction"))
+		{
+			apply_legacy_nutrient_reintroduction_window();
 		}
 	}
 }

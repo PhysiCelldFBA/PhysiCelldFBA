@@ -324,15 +324,16 @@ bacterial-colony:
 	cp ./sample_projects_intracellular/fba/bacterial_colony/scripts/* ./scripts/
 
 crossfeeding:
-	cp -r ./sample_projects_intracellular/fba/crossfeeding/custom_modules/* ./custom_modules/
+	cp ./sample_projects_intracellular/fba/crossfeeding/custom_modules/* ./custom_modules/
 	touch main.cpp && cp main.cpp main-backup.cpp
 	cp ./sample_projects_intracellular/fba/crossfeeding/main.cpp ./main.cpp
 	cp Makefile Makefile-backup
 	cp ./sample_projects_intracellular/fba/crossfeeding/Makefile ./
-	cp -r ./config/PhysiCell_settings.xml ./config/PhysiCell_settings-backup.xml
+	cp ./config/PhysiCell_settings.xml ./config/PhysiCell_settings-backup.xml
 	cp -r ./sample_projects_intracellular/fba/crossfeeding/config/* ./config/
 		mkdir ./scripts/
 	cp -r ./sample_projects_intracellular/fba/crossfeeding/scripts/* ./scripts/
+	cp ./config/PhysiCell_settings_crossfeeding.xml ./config/PhysiCell_settings.xml
 
 
 metabolic_driven_motility:

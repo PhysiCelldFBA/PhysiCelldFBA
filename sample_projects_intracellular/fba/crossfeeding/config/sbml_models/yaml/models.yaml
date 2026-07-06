@@ -26,17 +26,14 @@ substrates:
     diffusion_coefficient: 48000.0  # micron^2/min
     decay_rate: 0.0                  # 1/min
     initial_condition: 300.0         # mM
-  
   - name: "methane"
     diffusion_coefficient: 5233.0    # micron^2/min
     decay_rate: 0.0                  # 1/min
     initial_condition: 0.0            # mM
-  
   - name: "CO2"
     diffusion_coefficient: 48000.0    # micron^2/min
     decay_rate: 0.0                  # 1/min
     initial_condition: 300.0         # mM
-  
   - name: "H2"
     diffusion_coefficient: 5233.0     # micron^2/min
     decay_rate: 0.0                  # 1/min
@@ -56,7 +53,6 @@ models:
         fba_flux: "R_EX_glc_D_e"      # Exchange reaction ID from SBML model
         Km: 0.01                       # Michaelis-Menten constant (mM) - increased for more gradual kinetics
         Vmax: 0.05                     # Maximum velocity (mol/(L·min)) - reduced from 0.5 to prevent immediate consumption
-      
       - substrate: "H2"
         fba_flux: "R_EX_h2_e"
         Km: 0.01                       # mM - increased for more gradual kinetics
@@ -90,21 +86,18 @@ models:
     # Exchange reactions configuration
     # Each exchange defines how a substrate is transported between the cell and microenvironment
     exchanges:
-      - substrate: "CO2"               # Substrate name (must match microenvironment variable)
-        fba_flux: "R_EX_co2_e"        # Exchange reaction ID from SBML model
+      - substrate: "CO2"               
+        fba_flux: "R_EX_co2_e"         
         Km: 0.02                       # Michaelis-Menten constant (mM)
         Vmax: 8.0                      # Maximum velocity (mol/(L·min))
-      
       - substrate: "H2"
         fba_flux: "R_EX_h2_e"
         Km: 0.002                      # mM
-        Vmax: 18.0                     # mol/(L·min)
-      
+        Vmax: 18.0                    
       - substrate: "methane"
         fba_flux: "R_EX_ch4_e"
         Km: 0.8                        # mM
-        Vmax: 10.0                     # mol/(L·min)
-    
+        Vmax: 10.0                     
     # Growth model parameters
     growth_model:
       cell_density: 1.04              # Cell density (g/ml)

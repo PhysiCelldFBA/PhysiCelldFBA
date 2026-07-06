@@ -10,15 +10,15 @@
     </cell_rules>
 
     <domain>
-        <x_min>-90</x_min>
-        <x_max>90</x_max>
-        <y_min>-90</y_min>
-        <y_max>90</y_max>
+        <x_min>-100</x_min>
+        <x_max>100</x_max>
+        <y_min>-100</y_min>
+        <y_max>100</y_max>
         <z_min>-0.75</z_min>
         <z_max>0.75</z_max>
-        <dx>0.75</dx>
-        <dy>0.75</dy>
-        <dz>0.75</dz>
+        <dx>0.8</dx>
+        <dy>0.8</dy>
+        <dz>0.8</dz>
         <use_2D>true</use_2D>
     </domain>
 
@@ -27,8 +27,8 @@
         <time_units>min</time_units>
         <space_units>micron</space_units>
         <dt_diffusion units="min">0.01</dt_diffusion>
-        <dt_mechanics units="min">0.01</dt_mechanics>
-        <dt_phenotype units="min">0.01</dt_phenotype>
+        <dt_mechanics units="min">0.1</dt_mechanics>
+        <dt_phenotype units="min">6</dt_phenotype>
     </overall>
 
     <parallel>
@@ -36,7 +36,7 @@
     </parallel>
 
     <save>
-        <folder>output_exp4</folder>
+        <folder>output_exp2</folder>
         <full_data>
             <interval units="min">30</interval>
             <enable>true</enable>
@@ -643,8 +643,7 @@
                         </exchange>
                         <exchange substrate="H2">
                             <fba_flux>R_EX_h2_e</fba_flux>
-                            <!-- exp4: raised from 0.0001 (near-saturated at all [H2]) to soften uptake coupling -->
-                            <Km units="mM">0.05</Km>
+                            <Km units="mM">0.0001</Km>
                             <Vmax units="mmol/g DW cell/h">20.0</Vmax>
                         </exchange>
                         <exchange substrate="methane">

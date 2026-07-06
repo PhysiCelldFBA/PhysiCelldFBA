@@ -92,14 +92,17 @@ void setup_tissue( void );
 // set up the BioFVM microenvironment
 void setup_microenvironment( void );
 
+/** Call once after initialize_microenvironment(): optional t=0 Dirichlet-off for glucose refeed experiments. */
+void apply_initial_glucose_refeed_setup(void);
+/** Each diffusion sub-step before simulate_diffusion_decay: toggle glucose Dirichlet pulses (see XML user_parameters). */
+void apply_glucose_dirichlet_refeed_schedule(void);
+
 void pre_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt );
 void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt );
 
 // Cell-type specific intracellular update functions
 void post_update_intracellular_c_beijerinckii(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt );
 void post_update_intracellular_m_barkeri(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt );
-
-// void reintroduce_nutrients_function ();
 
 std::vector<std::string> my_coloring_function( Cell* );
 
