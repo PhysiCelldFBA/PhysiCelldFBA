@@ -220,7 +220,7 @@ int main( int argc, char* argv[] )
 				}
 			}
 
-			apply_glucose_dirichlet_refeed_schedule();
+			// apply_glucose_dirichlet_refeed_schedule();
 
 			// run PhysiCell 
 			((Cell_Container *)microenvironment.agent_container)->update_all_cells( PhysiCell_globals.current_time );

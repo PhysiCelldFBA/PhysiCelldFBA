@@ -33,7 +33,7 @@
 #                                                                             #
 # BSD 3-Clause License (see https://opensource.org/licenses/BSD-3-Clause)     #
 #                                                                             #
-# Copyright (c) 2015-2021, Paul Macklin and the PhysiCell Project             #
+# Copyright (c) 2015-2018, Paul Macklin and the PhysiCell Project             #
 # All rights reserved.                                                        #
 #                                                                             #
 # Redistribution and use in source and binary forms, with or without          #
@@ -65,96 +65,60 @@
 ###############################################################################
 */
 
-#include "./custom.h"
+#include "custom.h"
+//#include "../addons/dFBA/src/dfba_intracellular.h"
 
-void create_cell_types( void )
+
+void create_cell_types(void)
 {
-	// set the random seed 
-	if (parameters.ints.find_index("random_seed") != -1)
-	{
-		SeedRandom(parameters.ints("random_seed"));
-	}
-	
-	/* 
-	   Put any modifications to default cell definition here if you 
-	   want to have "inherited" by other cell types. 
-	   
-	   This is a good place to set default functions. 
-	*/ 
-	
-	initialize_default_cell_definition(); 
-	cell_defaults.phenotype.secretion.sync_to_microenvironment( &microenvironment ); 
-	
-	cell_defaults.functions.volume_update_function = standard_volume_update_function;
-	cell_defaults.functions.update_velocity = standard_update_cell_velocity;
+	SeedRandom(parameters.ints("random_seed"));
 
-	cell_defaults.functions.update_migration_bias = NULL; 
-	cell_defaults.functions.update_phenotype = NULL; // update_cell_and_death_parameters_O2_based; 
-	cell_defaults.functions.custom_cell_rule = NULL; 
-	cell_defaults.functions.contact_function = NULL; 
+	initialize_default_cell_definition();
+
+	/*  This parses the cell definitions in the XML config file.  */
+	initialize_cell_definitions_from_pugixml();
+
+	//  This sets the pre and post intracellular update functions
+	cell_defaults.functions.pre_update_intracellular =  NULL;
+	cell_defaults.functions.post_update_intracellular = NULL;
+	cell_defaults.functions.update_phenotype = NULL; 
+	cell_defaults.functions.volume_update_function = NULL;
+
+	build_cell_definitions_maps();
 	
-	cell_defaults.functions.add_cell_basement_membrane_interactions = NULL; 
-	cell_defaults.functions.calculate_distance_to_membrane = NULL; 
-	
-	/*
-	   This parses the cell definitions in the XML config file. 
-	*/
-	
-	initialize_cell_definitions_from_pugixml(); 
+	setup_signal_behavior_dictionaries();
 
-	/*
-	   This builds the map of cell definitions and summarizes the setup. 
-	*/
-		
-	build_cell_definitions_maps(); 
+	Cell_Definition* c_beijerinckii = find_cell_definition( "c_beijerinckii");
+	//  This sets the pre and post intracellular update functions for C. beijerinckii
+	c_beijerinckii->functions.pre_update_intracellular =  NULL;
+	c_beijerinckii->functions.post_update_intracellular = post_update_intracellular_c_beijerinckii;
+	c_beijerinckii->functions.update_phenotype = NULL; 
+	c_beijerinckii->functions.volume_update_function = NULL;
 
-	/*
-	   This intializes cell signal and response dictionaries 
-	*/
+	Cell_Definition* m_barkeri = find_cell_definition( "m_barkeri");
+	//  This sets the pre and post intracellular update functions for M. barkeri
+	m_barkeri->functions.pre_update_intracellular =  NULL;
+	m_barkeri->functions.post_update_intracellular = post_update_intracellular_m_barkeri;
+	m_barkeri->functions.update_phenotype = NULL; 
+	m_barkeri->functions.volume_update_function = NULL;
 
-	setup_signal_behavior_dictionaries(); 	
+	display_cell_definitions(std::cout);
 
-	/* 
-	   Put any modifications to individual cell definitions here. 
-	   
-	   This is a good place to set custom functions. 
-	*/ 
-	
-	cell_defaults.functions.update_phenotype = phenotype_function; 
-	cell_defaults.functions.custom_cell_rule = custom_function; 
-	cell_defaults.functions.contact_function = contact_function; 
-
-	Cell_Definition* pCD = find_cell_definition( "cancer cell"); 
-	pCD->functions.update_phenotype = tumor_cell_phenotype_with_oncoprotein; 
-
-	pCD->parameters.o2_proliferation_saturation = 38; 
-	pCD->parameters.o2_reference = 38; 
-
-	/*
-	   This builds the map of cell definitions and summarizes the setup. 
-	*/
-		
-	display_cell_definitions( std::cout ); 
-	
-	return; 
+	return;
 }
 
-void setup_microenvironment( void )
+
+
+
+void setup_microenvironment(void)
 {
-	// set domain parameters 
-	
-	// put any custom code to set non-homogeneous initial conditions or 
-	// extra Dirichlet nodes here. 
-	
-	// initialize BioFVM 
-	
-	initialize_microenvironment(); 	
-	
-	return; 
+	initialize_microenvironment();
+	return;
 }
 
-void setup_tissue( void )
+void setup_tissue(void)
 {
+
 	double Xmin = microenvironment.mesh.bounding_box[0]; 
 	double Ymin = microenvironment.mesh.bounding_box[1]; 
 	double Zmin = microenvironment.mesh.bounding_box[2]; 
@@ -192,202 +156,247 @@ void setup_tissue( void )
 			pC->assign_position( position );
 		}
 	}
-	std::cout << std::endl; 
+	// std::cout << std::endl; 
+	
+	// load cells from your CSV file
+	load_cells_from_pugixml();
+	
+	return; 
+}
 
-	// custom placement 
+// Cell-type specific intracellular update function for C. beijerinckii
+void post_update_intracellular_c_beijerinckii(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt) {
+	// Set growth rate from intracellular model
+	pCell->custom_data["growth_rate"] = pCell->phenotype.intracellular->get_growth_rate();
+	
+	// Debug: Print growth rate and biomass flux for early timepoints
+	if (PhysiCell_globals.current_time < 2.0) {
+		double biomass_flux = 0.0;
+		try {
+			biomass_flux = pCell->phenotype.intracellular->get_flux_value("R_biomass");
+		} catch (const std::exception& e) {
+			std::cout << "Error getting biomass flux for c_beijerinckii: " << e.what() << std::endl;
+		}
+		
+		// std::cout << "Time: " << PhysiCell_globals.current_time 
+				//   << ", C. beijerinckii ID: " << pCell->ID 
+				//   << ", Growth rate: " << pCell->custom_data["growth_rate"] 
+				//   << ", Biomass flux: " << biomass_flux << std::endl;
+	}
+	
+	// Set metabolic fluxes specific to C. beijerinckii
+	try {
+		pCell->custom_data["glucose_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_glc_D_e");
+		pCell->custom_data["hydrogen_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_h2_e");
+		
+		// Debug fluxes for early timepoints (commented out for performance)
+		// if (PhysiCell_globals.current_time < 5.0) {
+		// 	std::cout << "C.beijerinckii ID " << pCell->ID 
+		// 			  << ": Glucose=" << pCell->custom_data["glucose_flux"] 
+		// 			  << ", H2=" << pCell->custom_data["hydrogen_flux"] << std::endl;
+		// }
+	} catch (const std::exception& e) {
+		std::cout << "Error accessing flux values for c_beijerinckii: " << e.what() << std::endl;
+	}
+	
+	return;
+}
 
-	Cell_Definition* pCD = find_cell_definition( "cancer cell"); 
-	double cell_radius = pCD->phenotype.geometry.radius; 
+// Cell-type specific intracellular update function for M. barkeri
+void post_update_intracellular_m_barkeri(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt) {
+	// Set growth rate from intracellular model
+	pCell->custom_data["growth_rate"] = pCell->phenotype.intracellular->get_growth_rate();
+	
+	// Debug: Print growth rate and biomass flux for early timepoints
+	if (PhysiCell_globals.current_time < 2.0) {
+		double biomass_flux = 0.0;
+		try {
+			biomass_flux = pCell->phenotype.intracellular->get_flux_value("R_BIOMASS_Mb_30");
+		} catch (const std::exception& e) {
+			std::cout << "Error getting biomass flux for m_barkeri: " << e.what() << std::endl;
+		}
+		
+		// std::cout << "Time: " << PhysiCell_globals.current_time 
+		// 		  << ", M. barkeri ID: " << pCell->ID 
+		// 		  << ", Growth rate: " << pCell->custom_data["growth_rate"] 
+		// 		  << ", Biomass flux: " << biomass_flux << std::endl;
+	}
+	
+	// Set metabolic fluxes specific to M. barkeri
+	try {
+		pCell->custom_data["h2_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_h2_e");
+		pCell->custom_data["co2_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_co2_e");
+		pCell->custom_data["methane_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_ch4_e");
+		
+		// Debug fluxes for early timepoints (commented out for performance)
+		// if (PhysiCell_globals.current_time < 10.0) {
+		// 	std::cout << "M.barkeri ID " << pCell->ID 
+		// 			  << ": H2=" << pCell->custom_data["h2_flux"]
+		// 			  << ", CO2=" << pCell->custom_data["co2_flux"]
+		// 			  << ", CH4=" << pCell->custom_data["methane_flux"] << std::endl;
+		// }
+	} catch (const std::exception& e) {
+		std::cout << "Error accessing flux values for m_barkeri: " << e.what() << std::endl;
+	}
+	
+	return;
+}
+
+// Generic post_update_intracellular function that dispatches to cell-type specific functions
+void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt) {
+	// Dispatch to the appropriate cell-type specific function
+	if (pCell->type_name == "c_beijerinckii") {
+		post_update_intracellular_c_beijerinckii(pCell, phenotype, dt);
+	} else if (pCell->type_name == "m_barkeri") {
+		post_update_intracellular_m_barkeri(pCell, phenotype, dt);
+	} else {
+		// Default behavior for unknown cell types
+		std::cout << "Warning: Unknown cell type '" << pCell->type_name 
+				  << "' in post_update_intracellular" << std::endl;
+		pCell->custom_data["growth_rate"] = pCell->phenotype.intracellular->get_growth_rate();
+	}
+	
+	return;
+}
+
+
+// NOT USED
+void reintroduce_nutrients_function () 
+{
+	if (PhysiCell::parameters.bools.find_index("nutrient_reintroduction") != -1) 
+	{
+		int nutrient_index = BioFVM::microenvironment.find_density_index(PhysiCell::parameters.strings("reintroduced_nutrient"));
+
+		if (PhysiCell::parameters.bools("nutrient_reintroduction")){
+			// Activate nutrient boundary at specified time
+			if (
+				(PhysiCell::PhysiCell_globals.current_time >= PhysiCell::parameters.doubles("reintroduction_start_time"))
+				&& (PhysiCell::PhysiCell_globals.current_time < (PhysiCell::parameters.doubles("reintroduction_start_time") + PhysiCell::parameters.doubles("reintroduction_duration")))
+				&& !BioFVM::microenvironment.get_substrate_dirichlet_activation(nutrient_index)
+			)
+			{
+				std::cout << PhysiCell::parameters.strings("reintroduced_nutrient") << " boundary activated at t=" << PhysiCell::PhysiCell_globals.current_time << std::endl;
+				BioFVM::microenvironment.set_substrate_dirichlet_activation(nutrient_index, true);	
+				std::cout << "Boundary condition set at: " << BioFVM::microenvironment.get_substrate_dirichlet_value(nutrient_index, 0) << std::endl;
+			}
+			else if (PhysiCell::PhysiCell_globals.current_time < (PhysiCell::parameters.doubles("reintroduction_start_time")))
+			{
+				BioFVM::microenvironment.set_substrate_dirichlet_activation(nutrient_index, false);
+			}
+
+			// Deactivate nutrient boundary after the duration
+			if (
+				(PhysiCell::PhysiCell_globals.current_time >= (PhysiCell::parameters.doubles("reintroduction_start_time") + PhysiCell::parameters.doubles("reintroduction_duration")))
+				&& BioFVM::microenvironment.get_substrate_dirichlet_activation(nutrient_index)
+			)
+			{
+				std::cout << PhysiCell::parameters.strings("reintroduced_nutrient") << " boundary deactivated at t=" << PhysiCell::PhysiCell_globals.current_time << std::endl;
+				BioFVM::microenvironment.set_substrate_dirichlet_activation(nutrient_index, false);	
+			}
+			
+		} else if ( BioFVM::microenvironment.get_substrate_dirichlet_activation(nutrient_index) ){
+			std::cout << PhysiCell::parameters.strings("reintroduced_nutrient") << " boundary forced deactivation at t=" << PhysiCell::PhysiCell_globals.current_time << std::endl;
+			BioFVM::microenvironment.set_substrate_dirichlet_activation(nutrient_index, false);	
+		}
+	}
+}
+
+std::vector<std::vector<double>> create_cell_sphere_positions(double cell_radius, double sphere_radius)
+{
+	std::vector<std::vector<double>> cells;
+	int xc=0,yc=0,zc=0;
+	double x_spacing= cell_radius*sqrt(3);
+	double y_spacing= cell_radius*2;
+	double z_spacing= cell_radius*sqrt(3);
+	
+	std::vector<double> tempPoint(3,0.0);
+	// std::vector<double> cylinder_center(3,0.0);
+	
+	for(double z=-sphere_radius;z<sphere_radius;z+=z_spacing, zc++)
+	{
+		for(double x=-sphere_radius;x<sphere_radius;x+=x_spacing, xc++)
+		{
+			for(double y=-sphere_radius;y<sphere_radius;y+=y_spacing, yc++)
+			{
+				tempPoint[0]=x + (zc%2) * 0.5 * cell_radius;
+				tempPoint[1]=y + (xc%2) * cell_radius;
+				tempPoint[2]=z;
+				
+				if(sqrt(norm_squared(tempPoint))< sphere_radius)
+				{ cells.push_back(tempPoint); }
+			}
+			
+		}
+	}
+	return cells;
+	
+}
+
+
+std::vector<std::vector<double>> create_cell_disc_positions(double cell_radius, double disc_radius)
+{	 
 	double cell_spacing = 0.95 * 2.0 * cell_radius; 
 	
-	double tumor_radius = parameters.doubles( "tumor_radius" ); // 250.0; 
-	
-	// Parameter<double> temp; 
-	
-	int i = parameters.doubles.find_index( "tumor_radius" ); 
-	
-	Cell* pCell = NULL; 
-	
 	double x = 0.0; 
-	double x_outer = tumor_radius; 
 	double y = 0.0; 
-	
-	double p_mean = parameters.doubles( "oncoprotein_mean" ); 
-	double p_sd = parameters.doubles( "oncoprotein_sd" ); 
-	double p_min = parameters.doubles( "oncoprotein_min" ); 
-	double p_max = parameters.doubles( "oncoprotein_max" ); 
+	double x_outer = 0.0;
+
+	std::vector<std::vector<double>> positions;
+	std::vector<double> tempPoint(3,0.0);
 	
 	int n = 0; 
-	while( y < tumor_radius )
+	while( y < disc_radius )
 	{
 		x = 0.0; 
 		if( n % 2 == 1 )
-		{ x = 0.5*cell_spacing; }
-		x_outer = sqrt( tumor_radius*tumor_radius - y*y ); 
+		{ x = 0.5 * cell_spacing; }
+		x_outer = sqrt( disc_radius*disc_radius - y*y ); 
 		
 		while( x < x_outer )
 		{
-			pCell = create_cell( *pCD ); // tumor cell 
-			pCell->assign_position( x , y , 0.0 );
-			double p = NormalRandom( p_mean, p_sd );
-			if( p < p_min )
-			{ p = p_min; }
-			if( p > p_max )
-			{ p = p_max; }
-			set_single_behavior( pCell, "custom:oncoprotein" , p ); 
-			
+			tempPoint[0]= x; tempPoint[1]= y;	tempPoint[2]= 0.0;
+			positions.push_back(tempPoint);			
 			if( fabs( y ) > 0.01 )
 			{
-				pCell = create_cell(*pCD); // tumor cell 
-				pCell->assign_position( x , -y , 0.0 );
-				double p = NormalRandom( p_mean, p_sd );
-				if( p < p_min )
-				{ p = p_min; }
-				if( p > p_max )
-				{ p = p_max; }
-				set_single_behavior( pCell, "custom:oncoprotein" , p ); 
+				tempPoint[0]= x; tempPoint[1]= -y;	tempPoint[2]= 0.0;
+				positions.push_back(tempPoint);
 			}
-			
 			if( fabs( x ) > 0.01 )
 			{ 
-				pCell = create_cell(*pCD); // tumor cell 
-				pCell->assign_position( -x , y , 0.0 );
-				double p = NormalRandom( p_mean, p_sd );
-				if( p < p_min )
-				{ p = p_min; }
-				if( p > p_max )
-				{ p = p_max; }
-				set_single_behavior( pCell, "custom:oncoprotein" , p ); 
-		
+				tempPoint[0]= -x; tempPoint[1]= y;	tempPoint[2]= 0.0;
+				positions.push_back(tempPoint);
 				if( fabs( y ) > 0.01 )
 				{
-					pCell = create_cell(*pCD); // tumor cell 
-					pCell->assign_position( -x , -y , 0.0 );
-					double p = NormalRandom( p_mean, p_sd );
-					if( p < p_min )
-					{ p = p_min; }
-					if( p > p_max )
-					{ p = p_max; }
-					set_single_behavior( pCell, "custom:oncoprotein" , p ); 
-
+					tempPoint[0]= -x; tempPoint[1]= -y;	tempPoint[2]= 0.0;
+					positions.push_back(tempPoint);
 				}
 			}
 			x += cell_spacing; 
-			
-		}
-		
+		}		
 		y += cell_spacing * sqrt(3.0)/2.0; 
 		n++; 
 	}
-	
-	double sum = 0.0; 
-	double min = 9e9; 
-	double max = -9e9; 
-	for( int i=0; i < all_cells->size() ; i++ )
-	{
-		double r = get_single_signal( (*all_cells)[i] , "custom:oncoprotein" ); 
-		sum += r;
-		if( r < min )
-		{ min = r; } 
-		if( r > max )
-		{ max = r; }
-	}
-	double mean = sum / ( all_cells->size() + 1e-15 ); 
-	// compute standard deviation 
-	sum = 0.0; 
-	for( int i=0; i < all_cells->size(); i++ )
-	{
-		double r = get_single_signal( (*all_cells)[i] , "custom:oncoprotein" ); 
-		sum +=  ( r - mean )*( r - mean ); 
-	}
-	double standard_deviation = sqrt( sum / ( all_cells->size() - 1.0 + 1e-15 ) ); 
-	
-	std::cout << std::endl << "Oncoprotein summary: " << std::endl
-			  << "===================" << std::endl; 
-	std::cout << "mean: " << mean << std::endl; 
-	std::cout << "standard deviation: " << standard_deviation << std::endl; 
-	std::cout << "[min max]: [" << min << " " << max << "]" << std::endl << std::endl; 	
-	
-	// load cells from your CSV file (if enabled)
-	load_cells_from_pugixml(); 	
-	
-	return; 
+	return positions;
 }
+
 
 std::vector<std::string> my_coloring_function( Cell* pCell )
-{ return paint_by_number_cell_coloring(pCell); }
-
-void phenotype_function( Cell* pCell, Phenotype& phenotype, double dt )
-{ return; }
-
-void custom_function( Cell* pCell, Phenotype& phenotype , double dt )
-{ return; } 
-
-void contact_function( Cell* pMe, Phenotype& phenoMe , Cell* pOther, Phenotype& phenoOther , double dt )
-{ return; } 
-
-std::vector<std::string> heterogeneity_coloring_function( Cell* pCell )
 {
-	double p = get_single_signal( pCell, "custom:oncoprotein"); 
-	
-	static double p_min = parameters.doubles( "oncoprotein_min" ); 
-	static double p_max = parameters.doubles( "oncoprotein_max" ); 
-	
-	// immune are black
-	std::vector< std::string > output( 4, "black" ); 
-	
-	if( pCell->type == 1 )
-	{ return output; } 
-	
-	// live cells are green, but shaded by oncoprotein value 
-	if( pCell->phenotype.death.dead == false )
-	{
-		int oncoprotein = (int) round( (1.0/(p_max-p_min)) * (p-p_min) * 255.0 ); 
-		char szTempString [128];
-		sprintf( szTempString , "rgb(%u,%u,%u)", oncoprotein, oncoprotein, 255-oncoprotein );
-		output[0].assign( szTempString );
-		output[1].assign( szTempString );
 
-		sprintf( szTempString , "rgb(%u,%u,%u)", (int)round(output[0][0]/p_max) , (int)round(output[0][1]/p_max) , (int)round(output[0][2]/p_max) );
-		output[2].assign( szTempString );
-		
-		return output; 
+	std::vector<std::string> output(4, "red");
+        
+	double flux_value =  0.0;
+	if( abs(flux_value) >= 0.0 )
+	{
+		output[0] = "blue";
+		output[2] = "blue";
+		return output;
+	}
+	else
+	{
+		output[0] = "green";
+		output[2] = "green";
 	}
 
-	// if not, dead colors 
-	
-	if( get_single_signal( pCell, "apoptotic") > 0.5 )
-	{
-		output[0] = "rgb(255,0,0)";
-		output[2] = "rgb(125,0,0)";
-	}
-	
-	// Necrotic - Brown
-	if( get_single_signal(pCell, "necrotic") > 0.5 )
-	{
-		output[0] = "rgb(250,138,38)";
-		output[2] = "rgb(139,69,19)";
-	}	
-	
-	return output; 
-}
-
-void tumor_cell_phenotype_with_oncoprotein( Cell* pCell, Phenotype& phenotype, double dt )
-{
-	update_cell_and_death_parameters_O2_based(pCell,phenotype,dt);
-	
-	// if cell is dead, don't bother with future phenotype changes. 
-	if( get_single_signal( pCell, "dead") > 0.5 )
-	{
-		pCell->functions.update_phenotype = NULL; 		
-		return; 
-	}
-
-	// multiply proliferation rate by the oncoprotein 
-
-	double cycle_rate = get_single_behavior( pCell, "cycle entry"); 
-	cycle_rate *= get_single_signal( pCell , "custom:oncoprotein"); 
-	set_single_behavior( pCell, "cycle entry" , cycle_rate ); 
-	
-	return; 
+	return output;
 }

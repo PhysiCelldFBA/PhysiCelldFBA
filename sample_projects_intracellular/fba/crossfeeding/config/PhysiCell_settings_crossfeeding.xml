@@ -36,7 +36,7 @@
     </parallel>
 
     <save>
-        <folder>output_crossfeeding</folder>
+        <folder>output_exp4</folder>
         <full_data>
             <interval units="min">30</interval>
             <enable>true</enable>

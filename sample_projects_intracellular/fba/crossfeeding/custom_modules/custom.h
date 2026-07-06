@@ -33,7 +33,7 @@
 #                                                                             #
 # BSD 3-Clause License (see https://opensource.org/licenses/BSD-3-Clause)     #
 #                                                                             #
-# Copyright (c) 2015-2021, Paul Macklin and the PhysiCell Project             #
+# Copyright (c) 2015-2018, Paul Macklin and the PhysiCell Project             #
 # All rights reserved.                                                        #
 #                                                                             #
 # Redistribution and use in source and binary forms, with or without          #
@@ -65,32 +65,48 @@
 ###############################################################################
 */
 
+
+
+
+#ifndef __Custom_h__
+#define __Custom_h__
+
 #include "../core/PhysiCell.h"
 #include "../modules/PhysiCell_standard_modules.h" 
 
 using namespace BioFVM; 
 using namespace PhysiCell;
 
-// setup functions to help us along 
+
+// any additional cell types (beyond cell_defaults)
+
+extern Cell_Definition motile_cell;
+
+// custom cell phenotype functions could go here
+
+// setup functions to help us along
 
 void create_cell_types( void );
-void setup_tissue( void ); 
+void setup_tissue( void );
 
-// set up the BioFVM microenvironment 
-void setup_microenvironment( void ); 
+// set up the BioFVM microenvironment
+void setup_microenvironment( void );
 
-// custom pathology coloring function 
+void pre_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt );
+void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt );
+
+// Cell-type specific intracellular update functions
+void post_update_intracellular_c_beijerinckii(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt );
+void post_update_intracellular_m_barkeri(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt );
+
+// void reintroduce_nutrients_function ();
 
 std::vector<std::string> my_coloring_function( Cell* );
 
-// custom functions can go here 
+// helper function to create a sphere of cells of a given radius
+std::vector<std::vector<double>> create_cell_sphere_positions(double cell_radius, double sphere_radius);
 
-void phenotype_function( Cell* pCell, Phenotype& phenotype, double dt );
-void custom_function( Cell* pCell, Phenotype& phenotype , double dt );
+// helper function to create a disc of cells of a given radius
+std::vector<std::vector<double>> create_cell_disc_positions(double cell_radius, double disc_radius);
 
-void contact_function( Cell* pMe, Phenotype& phenoMe , Cell* pOther, Phenotype& phenoOther , double dt ); 
-
-std::vector<std::string> heterogeneity_coloring_function( Cell* );
-
-void tumor_cell_phenotype_with_oncoprotein( Cell* pCell, Phenotype& phenotype, double dt ); 
-
+#endif
