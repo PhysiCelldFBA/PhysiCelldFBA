@@ -1,113 +1,104 @@
 #!/usr/bin/env python3
 """
-plot_cell_migration_composite.py
----------------------------------
-Publication-quality composite figure: a single cell's migration trajectory
-overlaid on the steady-state glucose concentration gradient.
+plot_representative_scenarios_figure.py
+----------------------------------------
+Build a journal-style multi-panel SVG/PNG figure comparing representative
+PhysiCelldFBA scenarios.
 
-For each selected time frame the cell is drawn as a filled circle coloured
-by either its motility speed fraction ("velocity") or its growth rate.
-The glucose field from the final simulation frame forms the background.
+The figure is designed to compare phenotypes such as:
+  1. no motility / no growth
+  2. motility / no growth
+  3. motility + growth recovery
 
-Because the domain is very wide (700 µm) relative to the cell diameter
-(~2 µm), cells are drawn at an inflated display radius (--cell-radius, default
-8 µm) so they are visible on the printed figure; this should be noted in the
-figure caption.  The y-axis is kept at its true extent (±10 µm) and the axes
-aspect ratio is set to "auto" so the full spatial context is preserved.
+For each scenario, the top row shows the cell trajectory over the glucose
+field. Lower rows show population-mean migration speed, growth rate, and
+metabolic flux dynamics.
 
-Usage
------
-    python plot_cell_migration_composite.py [options]
+Typical usage from the project root:
 
-    --output-dir  DIR    PhysiCell output directory          [../output]
-    --results-dir DIR    Where to write the figure           [../results/composite]
-    --color-by    STR    "velocity" | "growth_rate"          [velocity]
-    --n-frames    N      Number of time snapshots to overlay [12]
-    --dpi         N      Output resolution                   [300]
-    --cell-radius R      Display radius (µm, None=auto)      [auto]
-    --x-scale     STR    "linear" | "symlog"                 [linear]
-    --glc-frame   STR    "last" | "first"                    [last]
-    --no-glc-bg          Disable glucose background (cells only)
-    --glc-cmap STR       Colormap for glucose background      [Blues]
-    --cell-cmap STR      Colormap for cell metric             [auto]
-    --cell-edgecolor STR Cell outline color                   [dark green]
-    --cell-linewidth R   Cell outline width                   [0.6]
-    --glc-alpha R        Glucose background opacity           [0.85]
+    python scripts/plot_representative_scenarios_figure.py \
+        --runs-dir runs \
+        --results-dir results/representative_scenarios
 
-Recommended journal settings
-----------------------------
-    For a motility figure with an alive/proliferative visual language:
-        --color-by velocity --glc-cmap Blues --cell-cmap summer
+Manual scenario selection:
 
-    For a growth-focused figure:
-        --color-by growth_rate --glc-cmap Blues --cell-cmap Greens
+    python scripts/plot_representative_scenarios_figure.py \
+        --scenario runs/hill1_km050_glc010_jobXXXX/output::No motility / no growth \
+        --scenario runs/hill1_km002_glc050_jobXXXX/output::Motility / no growth \
+        --scenario runs/hill5_km002_glc065_jobXXXX/output::Motility + growth recovery \
+        --results-dir results/representative_scenarios
+
+Outputs:
+    fig_representative_scenarios.svg
+    fig_representative_scenarios.png
+    representative_scenarios_metrics.csv
 """
 
 from __future__ import annotations
 
 import argparse
 import os
-import sys
+import re
 import xml.etree.ElementTree as ET
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Iterable
 
 import matplotlib as mpl
-mpl.use("Agg")  # non-interactive backend – safe on HPC clusters
+mpl.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
-import matplotlib.cm as cm
-import matplotlib.ticker as ticker
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
+import pandas as pd
 from scipy.interpolate import griddata
 from pctk import multicellds
 
-# ---------------------------------------------------------------------------
-# Paths
-# ---------------------------------------------------------------------------
-_SCRIPT_DIR = Path(__file__).resolve().parent
-_REPO_ROOT   = _SCRIPT_DIR.parent
-DEFAULT_OUTPUT_DIR  = str(_REPO_ROOT / "output")
-DEFAULT_RESULTS_DIR = str(_REPO_ROOT / "results" / "composite")
-
-# ---------------------------------------------------------------------------
-# Microenvironment column indices
-# (0-2 = x/y/z; 3 = voxel volume; 4 = oxygen; 5 = glucose; …)
-# ---------------------------------------------------------------------------
 MICRO_IDX_GLUCOSE = 5
 
-# ---------------------------------------------------------------------------
-# Colour-metric mapping
-# ---------------------------------------------------------------------------
-_METRIC_COL = {
-    "velocity":    "migration_speed",
-    "growth_rate": "growth_rate",
-}
-_METRIC_LABEL = {
-    "velocity":    "Migration speed (µm/min)",
-    "growth_rate": "Growth rate (h⁻¹)",
-}
-_METRIC_CMAP = {
-    # Green/yellow palette avoids the “black = dead” impression while staying
-    # visible on a blue glucose background.
-    "velocity":    "summer",
-    "growth_rate": "Greens",
-}
+# -----------------------------------------------------------------------------
+# Styling
+# -----------------------------------------------------------------------------
 
 
-# ===========================================================================
-# Helper utilities (reused from dynamics_analysis.py patterns)
-# ===========================================================================
+def apply_style(scale: float = 1.0) -> None:
+    s = scale
+    mpl.rcParams.update({
+        "font.family": "sans-serif",
+        "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans"],
+        "font.size": 7 * s,
+        "axes.labelsize": 9 * s,
+        "axes.titlesize": 8 * s,
+        "xtick.labelsize": 6 * s,
+        "ytick.labelsize": 6 * s,
+        "legend.fontsize": 6 * s,
+        "axes.linewidth": 0.6 * s,
+        "xtick.major.width": 0.6 * s,
+        "ytick.major.width": 0.6 * s,
+        "xtick.major.size": 3 * s,
+        "ytick.major.size": 3 * s,
+        "lines.linewidth": 1.25 * s,
+        "savefig.dpi": 300,
+        "savefig.bbox": "tight",
+        "savefig.pad_inches": 0.03 * s,
+        "svg.fonttype": "none",  # keep text editable in Inkscape / Illustrator
+    })
 
-def _get_cell_columns(output_folder: str) -> list[str]:
-    """Parse cell-matrix column labels from initial.xml."""
-    xml_fname = os.path.join(output_folder, "initial.xml")
+
+# -----------------------------------------------------------------------------
+# PhysiCell helpers
+# -----------------------------------------------------------------------------
+
+
+def get_cell_columns(output_folder: str | Path) -> list[str]:
+    xml_fname = Path(output_folder) / "initial.xml"
     tree = ET.parse(xml_fname)
     root = tree.getroot()
 
     def _find_simplified(node):
+        if node is None:
+            return None
         for child in node:
             if child.tag == "simplified_data" and child.attrib.get("source") == "PhysiCell":
                 return child
@@ -115,9 +106,14 @@ def _get_cell_columns(output_folder: str) -> list[str]:
             r = _find_simplified(child)
             if r is not None:
                 return r
+        return None
 
-    node   = _find_simplified(root.find("cellular_information"))
+    node = _find_simplified(root.find("cellular_information"))
+    if node is None:
+        raise RuntimeError(f"Could not find PhysiCell simplified_data labels in {xml_fname}")
     labels = node.find("labels")
+    if labels is None:
+        raise RuntimeError(f"Could not find labels in {xml_fname}")
 
     cols: list[str] = []
     for child in labels:
@@ -134,11 +130,10 @@ def _get_cell_columns(output_folder: str) -> list[str]:
     return cols
 
 
-def _ensure_rows(a: np.ndarray, ncols: int) -> np.ndarray:
-    """Ensure the matrix is (n_cells, n_features)."""
+def ensure_rows(a: np.ndarray, ncols: int) -> np.ndarray:
     a = np.asarray(a)
     if a.ndim != 2:
-        raise ValueError(f"Expected 2-D matrix, got {a.shape}")
+        raise ValueError(f"Expected 2-D matrix, got shape {a.shape}")
     if a.shape[1] == ncols:
         return a
     if a.shape[0] == ncols:
@@ -146,497 +141,713 @@ def _ensure_rows(a: np.ndarray, ncols: int) -> np.ndarray:
     raise ValueError(f"Cannot orient matrix: shape={a.shape}, expected ncols={ncols}")
 
 
-def _get_domain_bounds(reader: multicellds.MultiCellDS) -> tuple[tuple, tuple]:
-    """Read domain extents from initial.xml bounding_box."""
-    root    = reader._tree.getroot()
+def get_domain_bounds(reader: multicellds.MultiCellDS) -> tuple[tuple[float, float], tuple[float, float]]:
+    root = reader._tree.getroot()
     bb_text = root.find(".//microenvironment/domain/mesh/bounding_box").text
     xmin, ymin, _zmin, xmax, ymax, _zmax = map(float, bb_text.split())
     return (xmin, xmax), (ymin, ymax)
 
 
-# ===========================================================================
-# Publication style
-# ===========================================================================
+def load_aggregate_timeseries(reader: multicellds.MultiCellDS) -> pd.DataFrame:
+    cols = get_cell_columns(reader._output_folder)
+    name2idx = {n: i for i, n in enumerate(cols)}
 
-def _trimmed_cmap(name: str, vmin: float = 0.15, vmax: float = 0.95):
-    """Return a colormap with extreme dark/white ends removed.
+    required = ["x_position", "y_position", "migration_speed", "growth_rate",
+                "atp_flux", "motility_atp_flux", "glucose_flux"]
+    missing = [c for c in required if c not in name2idx]
+    if missing:
+        raise ValueError(f"Missing required cell columns: {missing}\nAvailable: {cols}")
 
-    This is useful for cell overlays: it avoids very dark cells that read as
-    dead/necrotic and avoids nearly-white cells that disappear on pale regions.
-    """
-    base = mpl.colormaps[name]
-    vmin = max(0.0, min(1.0, float(vmin)))
-    vmax = max(0.0, min(1.0, float(vmax)))
-    if vmax <= vmin:
-        vmin, vmax = 0.0, 1.0
-    return mpl.colors.LinearSegmentedColormap.from_list(
-        f"{name}_trimmed_{vmin:.2f}_{vmax:.2f}",
-        base(np.linspace(vmin, vmax, 256)),
-    )
-
-
-def _apply_publication_style() -> None:
-    """Apply Nature-style matplotlib rcParams (7 pt, sans-serif)."""
-    mpl.rcParams.update({
-        # Font
-        "font.family":       "sans-serif",
-        "font.sans-serif":   ["Helvetica", "Arial", "DejaVu Sans"],
-        "font.size":         7,
-        "axes.titlesize":    8,
-        "axes.labelsize":    7,
-        "xtick.labelsize":   6,
-        "ytick.labelsize":   6,
-        "legend.fontsize":   6,
-        # Lines
-        "axes.linewidth":    0.6,
-        "xtick.major.width": 0.6,
-        "ytick.major.width": 0.6,
-        "xtick.major.size":  3,
-        "ytick.major.size":  3,
-        "lines.linewidth":   1.0,
-        # Layout
-        "figure.dpi":        300,
-        "savefig.dpi":       300,
-        "savefig.bbox":      "tight",
-        "savefig.pad_inches": 0.02,
-        # Colorbars
-        "image.interpolation": "bilinear",
-    })
+    rows = []
+    for t_min, a in reader.cells_as_matrix_iterator():
+        a = ensure_rows(a, len(cols))
+        row = {
+            "time_h": t_min / 60.0,
+            "n_cells": a.shape[0],
+            "x_position": float(np.mean(a[:, name2idx["x_position"]])),
+            "y_position": float(np.mean(a[:, name2idx["y_position"]])),
+            "migration_speed": float(np.mean(a[:, name2idx["migration_speed"]])),
+            "growth_rate": float(np.mean(a[:, name2idx["growth_rate"]])),
+            "atp_flux": float(np.mean(a[:, name2idx["atp_flux"]])),
+            "motility_atp_flux": float(np.mean(a[:, name2idx["motility_atp_flux"]])),
+            "glucose_flux": float(np.mean(a[:, name2idx["glucose_flux"]])),
+        }
+        rows.append(row)
+    if not rows:
+        raise RuntimeError("No cell time series found.")
+    return pd.DataFrame(rows)
 
 
-# ===========================================================================
-# Data loading
-# ===========================================================================
-
-def _load_glucose_background(
-    reader: multicellds.MultiCellDS,
-    frame: str,
-    domain_x: tuple[float, float],
-    domain_y: tuple[float, float],
-    grid_nx: int = 700,
-    grid_ny: int = 100,
-) -> tuple[np.ndarray, float, float]:
-    """
-    Interpolate the glucose field onto a regular grid.
-
-    Returns
-    -------
-    Gi        : (grid_ny, grid_nx) float array
-    glc_vmin  : float
-    glc_vmax  : float
-    """
-    all_frames = list(reader.microenvironment_as_matrix_iterator())
-    if not all_frames:
-        raise RuntimeError("No microenvironment data found.")
-
-    if frame == "first":
-        _t, m = all_frames[0]
-    else:  # "last"
-        _t, m = all_frames[-1]
-
-    vox_x = m[0, :]
-    vox_y = m[1, :]
-    glc   = m[MICRO_IDX_GLUCOSE, :]
-
-    xi     = np.linspace(domain_x[0], domain_x[1], grid_nx)
-    yi     = np.linspace(domain_y[0], domain_y[1], grid_ny)
-    Xi, Yi = np.meshgrid(xi, yi)
-    Gi     = griddata((vox_x, vox_y), glc, (Xi, Yi), method="linear")
-
-    # Use the colour scale from the displayed frame only so the gradient
-    # contrast is maximal (using all frames would average out most variation).
-    glc_vmin = float(np.nanmin(glc))
-    glc_vmax = float(np.nanmax(glc))
-    # Protect against degenerate (uniform) fields
-    if glc_vmax <= glc_vmin:
-        glc_vmax = glc_vmin + 1e-9
-
-    return Gi, glc_vmin, glc_vmax
-
-
-def _load_cell_snapshots(
+def load_cell_snapshots(
     reader: multicellds.MultiCellDS,
     n_frames: int,
     color_col: str,
     frame_spacing: str = "linear",
 ) -> list[dict]:
-    """
-    Load per-cell data for N evenly-spaced time frames.
-
-    Returns a list of dicts with keys:
-        time_h, x, y, total_volume, <color_col>
-    (each value is a 1-D numpy array over all cells in that snapshot).
-    """
-    cols     = _get_cell_columns(reader._output_folder)
+    cols = get_cell_columns(reader._output_folder)
     name2idx = {n: i for i, n in enumerate(cols)}
-
     needed = ["x_position", "y_position", "total_volume", color_col]
     missing = [c for c in needed if c not in name2idx]
     if missing:
-        raise ValueError(
-            f"Required columns not found in cell matrix: {missing}\n"
-            f"Available columns include: {cols[:30]}"
-        )
+        raise ValueError(f"Missing required cell columns: {missing}")
 
     all_items = list(reader.cells_as_matrix_iterator())
-    if not all_items:
-        raise RuntimeError("No cell data found in output directory.")
-
     n_total = len(all_items)
+    if n_total == 0:
+        raise RuntimeError("No cell snapshots found.")
     if n_total <= 1:
         indices = np.array([0], dtype=int)
     elif frame_spacing == "log":
-        # Denser sampling in the early (fast-changing) period.
-        raw     = np.geomspace(1, n_total, min(n_frames, n_total))
+        raw = np.geomspace(1, n_total, min(n_frames, n_total))
         indices = np.unique(np.clip(np.round(raw).astype(int) - 1, 0, n_total - 1))
     else:
-        # Linear: evenly spaced across the full simulation time.
         indices = np.unique(np.linspace(0, n_total - 1, min(n_frames, n_total)).astype(int))
 
     snapshots = []
     for idx in indices:
         t_min, a = all_items[idx]
-        a        = _ensure_rows(a, len(cols))
-        time_h   = t_min / 60.0
+        a = ensure_rows(a, len(cols))
         snapshots.append({
-            "time_h":       time_h,
-            "x":            a[:, name2idx["x_position"]],
-            "y":            a[:, name2idx["y_position"]],
+            "time_h": t_min / 60.0,
+            "x": a[:, name2idx["x_position"]],
+            "y": a[:, name2idx["y_position"]],
             "total_volume": a[:, name2idx["total_volume"]],
-            color_col:      a[:, name2idx[color_col]],
+            color_col: a[:, name2idx[color_col]],
         })
-
-    print(f"  Loaded {len(snapshots)} cell snapshots "
-          f"(t = {snapshots[0]['time_h']:.2f} – {snapshots[-1]['time_h']:.2f} h)")
     return snapshots
 
 
-# ===========================================================================
-# Main figure
-# ===========================================================================
-
-def plot_composite(
-    output_dir:        str,
-    out_stem:          str,
-    color_by:          str  = "velocity",
-    n_frames:          int  = 12,
-    glc_frame:         str  = "last",
-    dpi:               int  = 300,
-    cell_radius:       float | None = None,
-    x_scale:           str  = "linear",
-    show_glc_bg:       bool  = True,
-    figsize:           tuple = (7.09, 2.4),  # inches: Nature double-column
-    frame_spacing:     str  = "linear",
-    glc_cmap:          str  = "Blues",
-    cell_cmap:         str | None = None,
-    cell_edgecolor:    str  = "#1b4332",
-    cell_linewidth:    float = 0.6,
-    cell_alpha:        float = 0.97,
-    glc_alpha:         float = 0.85,
-    cell_cmap_min:     float = 0.15,
-    cell_cmap_max:     float = 0.95,
-) -> None:
-    """
-    Build and save the composite figure.
-
-    Parameters
-    ----------
-    output_dir    : PhysiCell output folder
-    out_stem      : output path without extension (both .svg and .pdf are saved)
-    color_by      : "velocity" | "growth_rate"
-    n_frames      : number of time snapshots to overlay
-    glc_frame     : "last" | "first"  – which frame supplies the glucose background
-    dpi           : output resolution
-    cell_radius   : display radius of each cell circle (µm).
-                    None = physical radius per cell from total_volume: r = (3V/4π)^(1/3).
-    x_scale       : "linear" | "symlog"
-    show_glc_bg   : whether to show the glucose concentration background
-    figsize       : figure size in inches (width, height)
-    glc_cmap      : background colormap; recommended: "Blues" or "Greys"
-    cell_cmap     : cell colormap; default uses metric-specific mapping
-    cell_edgecolor: cell outline color for contrast against the background
-    cell_linewidth: cell outline width
-    cell_alpha    : cell fill opacity
-    glc_alpha     : glucose background opacity
-    cell_cmap_min : lower fraction of cell colormap to use
-    cell_cmap_max : upper fraction of cell colormap to use
-    """
-    if color_by not in _METRIC_COL:
-        raise ValueError(f"--color-by must be one of {list(_METRIC_COL)}")
-
-    color_col   = _METRIC_COL[color_by]
-    color_label = _METRIC_LABEL[color_by]
-    color_cmap  = cell_cmap if cell_cmap is not None else _METRIC_CMAP[color_by]
-
-    # -----------------------------------------------------------------------
-    # Load data
-    # -----------------------------------------------------------------------
-    print(f"[composite] Loading output from: {output_dir}")
-    reader   = multicellds.MultiCellDS(output_dir)
-    domain_x, domain_y = _get_domain_bounds(reader)
-    print(f"  Domain: x {domain_x}, y {domain_y}")
-
-    snapshots = _load_cell_snapshots(reader, n_frames, color_col, frame_spacing)
-
-    # Determine colour scale across all frames so the same scale is used
-    # for every circle in the composite plot.
-    all_metric = np.concatenate([s[color_col] for s in snapshots])
-    # Linear norm: migration speed fraction is in [0, 1]
-    c_vmin = 0.0
-    c_vmax = 1.0
-
-    norm_cells = Normalize(vmin=c_vmin, vmax=c_vmax)
-    cmap_cells = _trimmed_cmap(color_cmap, cell_cmap_min, cell_cmap_max)
-
-    Gi = glc_vmin = glc_vmax = None
-    if show_glc_bg:
-        print(f"  Loading glucose background from {glc_frame} frame …")
-        Gi, glc_vmin, glc_vmax = _load_glucose_background(
-            reader, glc_frame, domain_x, domain_y,
-            grid_nx=700, grid_ny=200,
-        )
-        print(f"  Glucose colour range: [{glc_vmin:.4f}, {glc_vmax:.4f}] mM")
-
-    # -----------------------------------------------------------------------
-    # Apply publication style
-    # -----------------------------------------------------------------------
-    _apply_publication_style()
-
-    # -----------------------------------------------------------------------
-    # Figure layout
-    # -----------------------------------------------------------------------
-    fig = plt.figure(figsize=figsize, constrained_layout=True)
-
-    # Two narrow colorbars on the right; constrained_layout handles spacing.
-    if show_glc_bg:
-        gs = fig.add_gridspec(
-            1, 3,
-            width_ratios=[1, 0.04, 0.04],
-        )
-        ax       = fig.add_subplot(gs[0, 0])
-        cax_glc  = fig.add_subplot(gs[0, 1])
-        cax_cell = fig.add_subplot(gs[0, 2])
+def glucose_grid(
+    reader: multicellds.MultiCellDS,
+    frame: str,
+    domain_x: tuple[float, float],
+    domain_y: tuple[float, float],
+    grid_nx: int = 700,
+    grid_ny: int = 160,
+) -> tuple[np.ndarray, np.ndarray, float, float]:
+    frames = list(reader.microenvironment_as_matrix_iterator())
+    if not frames:
+        raise RuntimeError("No microenvironment data found.")
+    if frame == "first":
+        _t, m = frames[0]
     else:
-        gs = fig.add_gridspec(1, 2, width_ratios=[1, 0.04])
-        ax       = fig.add_subplot(gs[0, 0])
-        cax_cell = fig.add_subplot(gs[0, 1])
-        cax_glc  = None
+        _t, m = frames[-1]
 
-    # -----------------------------------------------------------------------
-    # Glucose background
-    # -----------------------------------------------------------------------
-    if show_glc_bg and Gi is not None:
-        norm_glc  = Normalize(vmin=glc_vmin, vmax=glc_vmax)
-        cmap_glc  = mpl.colormaps[glc_cmap]
-        im = ax.imshow(
-            Gi,
-            origin="lower",
-            extent=[domain_x[0], domain_x[1], domain_y[0], domain_y[1]],
-            vmin=glc_vmin,
-            vmax=glc_vmax,
-            cmap=cmap_glc,
-            interpolation="bilinear",
-            aspect="auto",
-            alpha=glc_alpha,
-            zorder=1,
+    vox_x = m[0, :]
+    vox_y = m[1, :]
+    glc = m[MICRO_IDX_GLUCOSE, :]
+
+    xi = np.linspace(domain_x[0], domain_x[1], grid_nx)
+    yi = np.linspace(domain_y[0], domain_y[1], grid_ny)
+    Xi, Yi = np.meshgrid(xi, yi)
+    Gi = griddata((vox_x, vox_y), glc, (Xi, Yi), method="linear")
+
+    return Gi, glc, float(np.nanmin(glc)), float(np.nanmax(glc))
+
+
+def infer_glucose_boundary_x(reader: multicellds.MultiCellDS, domain_x: tuple[float, float]) -> float:
+    frames = list(reader.microenvironment_as_matrix_iterator())
+    _t, m = frames[-1]
+    vox_x = m[0, :]
+    glc = m[MICRO_IDX_GLUCOSE, :]
+    left_mask = vox_x <= np.percentile(vox_x, 5)
+    right_mask = vox_x >= np.percentile(vox_x, 95)
+    left_mean = float(np.nanmean(glc[left_mask]))
+    right_mean = float(np.nanmean(glc[right_mask]))
+    return domain_x[1] if right_mean >= left_mean else domain_x[0]
+
+
+# -----------------------------------------------------------------------------
+# Scenario metadata and selection
+# -----------------------------------------------------------------------------
+
+
+_PARAM_RE = re.compile(r"hill(?P<hill>\d+)_km(?P<km>\d+)_glc(?P<glc>\d+)")
+
+
+@dataclass
+class Scenario:
+    output_dir: Path
+    title: str
+    short_title: str
+    df: pd.DataFrame
+    reader: multicellds.MultiCellDS
+    domain_x: tuple[float, float]
+    domain_y: tuple[float, float]
+    boundary_x: float
+    params: dict
+    summary: dict
+
+
+def parse_params(path: Path) -> dict:
+    m = _PARAM_RE.search(str(path))
+    if not m:
+        return {"hill": np.nan, "km": np.nan, "glc": np.nan, "param_label": path.parent.name}
+    hill = int(m.group("hill"))
+    km_raw = m.group("km")
+    glc_raw = m.group("glc")
+    return {
+        "hill": hill,
+        "km": int(km_raw) / 100.0,
+        "glc": int(glc_raw) / 100.0,
+        "km_raw": km_raw,
+        "glc_raw": glc_raw,
+        "param_label": f"Hill {hill}, Km {int(km_raw) / 100.0:.2f}, Glc {int(glc_raw) / 100.0:.2f}",
+    }
+
+
+def summarize_run(output_dir: Path, growth_threshold: float, movement_threshold: float) -> tuple[pd.DataFrame, multicellds.MultiCellDS, tuple, tuple, float, dict]:
+    reader = multicellds.MultiCellDS(str(output_dir))
+    domain_x, domain_y = get_domain_bounds(reader)
+    boundary_x = infer_glucose_boundary_x(reader, domain_x)
+    df = load_aggregate_timeseries(reader)
+
+    x0 = float(df["x_position"].iloc[0])
+    direction = 1.0 if boundary_x >= x0 else -1.0
+    df["displacement_toward_glucose"] = (df["x_position"] - x0) * direction
+    df["displacement_toward_glucose"] = df["displacement_toward_glucose"].clip(lower=0.0)
+
+    max_migration = float(df["migration_speed"].max())
+    max_disp = float(df["displacement_toward_glucose"].max())
+    final_growth = float(df["growth_rate"].iloc[-1])
+    max_growth = float(df["growth_rate"].max())
+    growth_detected = bool(max_growth > growth_threshold)
+    movement_detected = bool((max_migration > movement_threshold) or (max_disp > 5.0))
+
+    if movement_detected and growth_detected:
+        behavior = "motility + growth recovery"
+    elif movement_detected and not growth_detected:
+        behavior = "motility / no growth"
+    else:
+        behavior = "no motility / no growth"
+
+    summary = {
+        "max_migration_speed": max_migration,
+        "max_displacement_toward_glucose": max_disp,
+        "final_growth_rate": final_growth,
+        "max_growth_rate": max_growth,
+        "growth_detected": int(growth_detected),
+        "movement_detected": int(movement_detected),
+        "behavior": behavior,
+        "boundary_x": boundary_x,
+    }
+    return df, reader, domain_x, domain_y, boundary_x, summary
+
+
+def make_scenario(output_dir: Path, title: str | None, growth_threshold: float, movement_threshold: float) -> Scenario:
+    df, reader, domain_x, domain_y, boundary_x, summary = summarize_run(output_dir, growth_threshold, movement_threshold)
+    params = parse_params(output_dir)
+    if title is None or title.strip() == "":
+        title = f"{summary['behavior']}\n{params['param_label']}"
+    short_title = str(title).split("\n")[0]
+    return Scenario(output_dir, title, short_title, df, reader, domain_x, domain_y, boundary_x, params, summary)
+
+
+def find_output_dirs(runs_dir: Path) -> list[Path]:
+    candidates = []
+    for p in sorted(runs_dir.glob("hill*_job*/output")):
+        if (p / "initial.xml").exists():
+            candidates.append(p)
+    return candidates
+
+
+def auto_select_scenarios(
+    runs_dir: Path,
+    growth_threshold: float,
+    movement_threshold: float,
+    max_scenarios: int = 3,
+) -> list[Scenario]:
+    rows = []
+    print(f"Scanning runs in: {runs_dir}")
+    for out in find_output_dirs(runs_dir):
+        try:
+            df, reader, domain_x, domain_y, boundary_x, summary = summarize_run(out, growth_threshold, movement_threshold)
+            params = parse_params(out)
+            rows.append({
+                "output_dir": out,
+                "df": df,
+                "reader": reader,
+                "domain_x": domain_x,
+                "domain_y": domain_y,
+                "boundary_x": boundary_x,
+                "params": params,
+                **summary,
+            })
+        except Exception as e:
+            print(f"  WARNING: skipping {out}: {e}")
+
+    if not rows:
+        raise RuntimeError(f"No valid outputs found in {runs_dir}")
+
+    meta = pd.DataFrame([{k: v for k, v in r.items() if k not in {"df", "reader", "domain_x", "domain_y", "params"}} for r in rows])
+    print("Available behavior classes:")
+    print(meta["behavior"].value_counts().to_string())
+
+    selected = []
+
+    def _row_to_scenario(r, title_prefix):
+        params = r["params"]
+        title = f"{title_prefix}\n{params['param_label']}"
+        return Scenario(
+            output_dir=r["output_dir"],
+            title=title,
+            short_title=title_prefix,
+            df=r["df"],
+            reader=r["reader"],
+            domain_x=r["domain_x"],
+            domain_y=r["domain_y"],
+            boundary_x=r["boundary_x"],
+            params=params,
+            summary={
+                "max_migration_speed": r["max_migration_speed"],
+                "max_displacement_toward_glucose": r["max_displacement_toward_glucose"],
+                "final_growth_rate": r["final_growth_rate"],
+                "max_growth_rate": r["max_growth_rate"],
+                "growth_detected": r["growth_detected"],
+                "movement_detected": r["movement_detected"],
+                "behavior": r["behavior"],
+                "boundary_x": r["boundary_x"],
+            },
         )
-        cb_glc = fig.colorbar(ScalarMappable(norm=norm_glc, cmap=cmap_glc),
-                               cax=cax_glc)
-        cb_glc.set_label("Glucose (mM)", labelpad=3)
-        cb_glc.ax.tick_params(labelsize=5, length=2)
-        cb_glc.outline.set_linewidth(0.4)
+
+    # 1. No motility / no growth: choose the most static example.
+    no_rows = [r for r in rows if r["behavior"] == "no motility / no growth"]
+    if no_rows:
+        r = sorted(no_rows, key=lambda x: (x["max_migration_speed"], x["max_displacement_toward_glucose"]))[0]
+        selected.append(_row_to_scenario(r, "No motility / no growth"))
+
+    # 2. Motility / no growth: choose the largest displacement without growth.
+    mot_rows = [r for r in rows if r["behavior"] == "motility / no growth"]
+    if mot_rows:
+        r = sorted(mot_rows, key=lambda x: (x["max_displacement_toward_glucose"], x["max_migration_speed"]), reverse=True)[0]
+        selected.append(_row_to_scenario(r, "Motility / no growth"))
+
+    # 3. Motility + growth recovery: choose strongest final growth.
+    grow_rows = [r for r in rows if r["behavior"] == "motility + growth recovery"]
+    if grow_rows:
+        r = sorted(grow_rows, key=lambda x: (x["final_growth_rate"], x["max_growth_rate"]), reverse=True)[0]
+        selected.append(_row_to_scenario(r, "Motility + growth recovery"))
+
+    # Fallback if fewer than requested.
+    if len(selected) < min(max_scenarios, 3):
+        already = {str(s.output_dir) for s in selected}
+        remaining = [r for r in rows if str(r["output_dir"]) not in already]
+        remaining = sorted(remaining, key=lambda x: (x["growth_detected"], x["max_displacement_toward_glucose"]), reverse=True)
+        for r in remaining:
+            if len(selected) >= max_scenarios:
+                break
+            selected.append(_row_to_scenario(r, r["behavior"].capitalize()))
+
+    return selected[:max_scenarios]
 
 
-    # -----------------------------------------------------------------------
-    # Cell circles (one circle per cell per selected frame)
-    # -----------------------------------------------------------------------
-    # Colour time annotations alternately above/below to avoid crowding.
-    n_snap   = len(snapshots)
-    cmap_t   = mpl.colormaps["Greys"].resampled(n_snap + 2)  # light grey → dark grey for time labels
-    edgecolors = ["#222222"] * n_snap
-    # Minimum x-separation (data units) between consecutive top labels.
-    _label_min_sep = (domain_x[1] - domain_x[0]) / max(n_snap, 1) * 0.5
-    _last_label_x  = -np.inf
+# -----------------------------------------------------------------------------
+# Plotting
+# -----------------------------------------------------------------------------
+
+
+def truncated_cmap(name: str, low: float = 0.15, high: float = 0.95, n: int = 256):
+    base = mpl.colormaps[name]
+    colors = base(np.linspace(low, high, n))
+    return mpl.colors.LinearSegmentedColormap.from_list(f"{name}_trunc", colors)
+
+
+def glucose_yellow_cmap():
+    """Sequential white->gold gradient matching the project's glucose color."""
+    return mpl.colors.LinearSegmentedColormap.from_list(
+        "glucose_yellow", ["#ffffff", "#fbe6a2", "#f1c232"]
+    )
+
+
+def resolve_glucose_cmap(name: str):
+    if name.lower() in ("yellow", "glucose", "glucose_yellow"):
+        return glucose_yellow_cmap()
+    return mpl.colormaps[name]
+
+
+def metric_for_color(color_by: str) -> tuple[str, str, str]:
+    if color_by == "growth_rate":
+        return "growth_rate", "Growth rate (h$^{-1}$)", "Greens"
+    if color_by == "velocity":
+        return "migration_speed", "Migration speed (µm/min)", "summer"
+    raise ValueError("color_by must be 'velocity' or 'growth_rate'")
+
+
+def draw_composite_panel(
+    ax,
+    scenario: Scenario,
+    snapshots: list[dict],
+    Gi: np.ndarray,
+    domain_x: tuple[float, float],
+    domain_y: tuple[float, float],
+    glc_norm: Normalize,
+    glc_cmap,
+    cell_norm: Normalize,
+    cell_cmap,
+    color_col: str,
+    cell_radius: float | None,
+    x_scale: str,
+    show_time_labels: bool = True,
+    scale: float = 1.0,
+):
+    ax.imshow(
+        Gi,
+        origin="lower",
+        extent=[domain_x[0], domain_x[1], domain_y[0], domain_y[1]],
+        norm=glc_norm,
+        cmap=glc_cmap,
+        interpolation="bilinear",
+        aspect="auto",
+        zorder=1,
+        alpha=0.92,
+    )
+
+    n_snap = len(snapshots)
+    label_min_sep = (domain_x[1] - domain_x[0]) / max(n_snap, 1) * 0.60
 
     for k, snap in enumerate(snapshots):
-        xs       = snap["x"]
-        ys       = snap["y"]
-        vols     = snap["total_volume"]
-        metric   = snap[color_col]
-        time_h   = snap["time_h"]
+        xs = snap["x"]
+        ys = snap["y"]
+        vols = snap["total_volume"]
+        metric = snap[color_col]
 
         for i in range(len(xs)):
-            face_color = cmap_cells(norm_cells(metric[i]))
-            _r = cell_radius if cell_radius is not None \
-                else (3.0 * vols[i] / (4.0 * np.pi))**(1.0 / 3.0)
-            # Draw a thin white halo under the cell and then a dark outline.
-            # This keeps both low- and high-speed cells visible on any background.
-            halo = Circle(
-                (xs[i], ys[i]),
-                radius=_r * 1.08,
-                facecolor="none",
-                edgecolor="white",
-                linewidth=max(cell_linewidth * 1.6, 0.8),
-                alpha=0.95,
-                zorder=3 + k,
-            )
+            r = cell_radius if cell_radius is not None else (3.0 * vols[i] / (4.0 * np.pi)) ** (1.0 / 3.0)
+            # white halo for contrast against the glucose background
+            halo = Circle((xs[i], ys[i]), radius=r * 1.18, facecolor="white", edgecolor="none",
+                          alpha=0.92, zorder=2 + k)
             ax.add_patch(halo)
-
-            circ = Circle(
-                (xs[i], ys[i]),
-                radius=_r,
-                facecolor=face_color,
-                edgecolor=cell_edgecolor,
-                linewidth=cell_linewidth,
-                alpha=cell_alpha,
-                zorder=4 + k,
-            )
+            circ = Circle((xs[i], ys[i]), radius=r,
+                          facecolor=cell_cmap(cell_norm(metric[i])),
+                          edgecolor="#145A32", linewidth=0.45,
+                          alpha=0.96, zorder=3 + k)
             ax.add_patch(circ)
 
-        # Time label above the top spine, at the cell centroid x position.
-        # get_xaxis_transform() blends data-x with axes-fraction-y.
-        cx_mean = xs.mean()
-        if abs(cx_mean - _last_label_x) >= _label_min_sep or k == 0 or k == n_snap - 1:
-            trans = ax.get_xaxis_transform()
+    if show_time_labels:
+        # Label snapshots from latest to earliest, keeping only the most recent
+        # timestep whenever positions would overlap.
+        trans = ax.get_xaxis_transform()
+        kept_x: list[float] = []
+        for k in range(n_snap - 1, -1, -1):
+            cx_mean = float(np.mean(snapshots[k]["x"]))
+            if any(abs(cx_mean - kx) < label_min_sep for kx in kept_x):
+                continue
+            kept_x.append(cx_mean)
             ax.plot([cx_mean, cx_mean], [1.0, 1.025], transform=trans,
-                    color="#888888", lw=0.5, clip_on=False, zorder=11)
-            ax.text(cx_mean, 1.03, f"{time_h:.1f} h",
-                    transform=trans,
-                    ha="center", va="bottom", fontsize=5,
-                    color="#333333", clip_on=False, zorder=12)
-            _last_label_x = cx_mean
+                    color="0.55", lw=0.5 * scale, clip_on=False, zorder=20)
+            ax.text(cx_mean, 1.035, f"{snapshots[k]['time_h']:.1f} h", transform=trans,
+                    ha="center", va="bottom", fontsize=5.5 * scale, color="0.2",
+                    clip_on=False, zorder=21)
 
-    # -----------------------------------------------------------------------
-    # Cell colorbar
-    # -----------------------------------------------------------------------
-    sm_cells = ScalarMappable(norm=norm_cells, cmap=cmap_cells)
-    sm_cells.set_array([])
-    cb_cells = fig.colorbar(sm_cells, cax=cax_cell)
-    cb_cells.set_label(color_label, labelpad=3)
-    cb_cells.ax.tick_params(labelsize=5, length=2)
-    cb_cells.outline.set_linewidth(0.4)
-
-    # -----------------------------------------------------------------------
-    # Axes formatting
-    # -----------------------------------------------------------------------
-    # Use the full domain extent so the complete glucose gradient is visible.
     ax.set_xlim(domain_x[0], domain_x[1])
     ax.set_ylim(domain_y[0] - 2, domain_y[1] + 2)
-    # Equal aspect so cells (drawn in data units) appear as circles, not ovals.
     ax.set_aspect("equal", adjustable="box")
-
     if x_scale == "symlog":
-        # linthresh: linear region around 0 of width ~20 µm
         ax.set_xscale("symlog", linthresh=20, linscale=0.5)
-        ax.xaxis.set_minor_locator(ticker.NullLocator())
-
-    ax.set_xlabel("Position along gradient axis (µm)")
-    ax.set_ylabel("y position (µm)")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.spines["bottom"].set_linewidth(0.6)
-    ax.spines["left"].set_linewidth(0.6)
-    ax.tick_params(axis="both", which="major", labelsize=6, length=3, width=0.6)
-
-    # Legend
 
 
-    # -----------------------------------------------------------------------
-    # Save
-    # -----------------------------------------------------------------------
-    os.makedirs(os.path.dirname(out_stem) if os.path.dirname(out_stem) else ".", exist_ok=True)
+def plot_representative_figure(
+    scenarios: list[Scenario],
+    results_dir: Path,
+    out_name: str,
+    composite_color_by: str = "growth_rate",
+    n_frames: int = 7,
+    frame_spacing: str = "linear",
+    cell_radius: float | None = 4.0,
+    glc_frame: str = "last",
+    glc_cmap_name: str = "yellow",
+    figsize_per_col: float = 2.55,
+    x_scale: str = "linear",
+    growth_color_vmax: float | None = None,
+    scale: float = 3.0,
+):
+    apply_style(scale)
+    n = len(scenarios)
+    if n < 1:
+        raise ValueError("Need at least one scenario")
 
-    for ext in ("svg", "png"):
-        fpath = f"{out_stem}.{ext}"
-        fig.savefig(fpath, dpi=dpi, bbox_inches="tight", pad_inches=0.02)
-        print(f"  Saved: {fpath}")
+    color_col, cell_label, default_cell_cmap = metric_for_color(composite_color_by)
+    cell_cmap_name = default_cell_cmap
+    cell_cmap = truncated_cmap(cell_cmap_name, low=0.20, high=0.92)
+    glc_cmap = resolve_glucose_cmap(glc_cmap_name)
 
-    plt.close(fig)
+    # Preload composite data so we can use shared color scales.
+    comp_data = []
+    all_glc_values = []
+    all_cell_values = []
+    global_domain_x = None
+    global_domain_y = None
 
+    for s in scenarios:
+        domain_x, domain_y = s.domain_x, s.domain_y
+        if global_domain_x is None:
+            global_domain_x, global_domain_y = domain_x, domain_y
+        snapshots = load_cell_snapshots(s.reader, n_frames=n_frames, color_col=color_col, frame_spacing=frame_spacing)
+        Gi, glc_vals, glc_min, glc_max = glucose_grid(s.reader, glc_frame, domain_x, domain_y)
+        all_glc_values.append(glc_vals)
+        all_cell_values.append(np.concatenate([snap[color_col] for snap in snapshots]))
+        comp_data.append({"snapshots": snapshots, "Gi": Gi, "domain_x": domain_x, "domain_y": domain_y})
 
-# ===========================================================================
-# CLI
-# ===========================================================================
+    glc_all = np.concatenate(all_glc_values)
+    glc_norm = Normalize(vmin=float(np.nanmin(glc_all)), vmax=float(np.nanmax(glc_all)))
 
-def _parse_args(argv=None) -> argparse.Namespace:
-    p = argparse.ArgumentParser(
-        description="Composite publication figure: cell trajectory + glucose gradient.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    cell_all = np.concatenate(all_cell_values)
+    if composite_color_by == "velocity":
+        cell_norm = Normalize(vmin=0.0, vmax=max(1.0, float(np.nanmax(cell_all))))
+    else:
+        vmax = growth_color_vmax if growth_color_vmax is not None else float(np.nanmax(cell_all))
+        if vmax <= 0:
+            vmax = 1e-9
+        cell_norm = Normalize(vmin=0.0, vmax=vmax)
+
+    # Figure layout: three data rows (composite, migration/growth, flux) plus a
+    # right-hand column for vertical colorbars and legends.
+    fig_w = max(7.6, figsize_per_col * n + 1.15) * scale
+    fig_h = (6.0 if n == 3 else 5.7) * scale
+    fig = plt.figure(figsize=(fig_w, fig_h), constrained_layout=False)
+    gs = fig.add_gridspec(
+        nrows=3,
+        ncols=n + 1,
+        width_ratios=[1] * n + [0.14],
+        height_ratios=[1.05, 0.92, 1.00],
+        left=0.10,
+        right=0.90,
+        bottom=0.11,
+        top=0.95,
+        wspace=0.62,
+        hspace=0.28,
     )
-    p.add_argument("--output-dir",  default=DEFAULT_OUTPUT_DIR,
-                   help="PhysiCell output directory")
-    p.add_argument("--results-dir", default=DEFAULT_RESULTS_DIR,
-                   help="Directory for output figures")
-    p.add_argument("--color-by",    default="velocity",
-                   choices=["velocity", "growth_rate"],
-                   help="Cell colour metric")
-    p.add_argument("--n-frames",    type=int, default=12,
-                   help="Number of time snapshots to overlay")
-    p.add_argument("--dpi",         type=int, default=300,
-                   help="Output resolution in DPI")
-    p.add_argument("--cell-radius", type=float, default=None,
-                   help="Display radius of each cell (µm). Default: physical radius from total_volume.")
-    p.add_argument("--x-scale",     default="linear",
-                   choices=["linear", "symlog"],
-                   help="X-axis scaling")
-    p.add_argument("--glc-frame",   default="last",
-                   choices=["last", "first"],
-                   help="Which frame to use for the glucose background")
-    p.add_argument("--no-glc-bg",   action="store_true",
-                   help="Disable the glucose concentration background")
-    p.add_argument("--figsize",     nargs=2, type=float, default=[7.09, 2.4],
-                   metavar=("W", "H"),
-                   help="Figure size in inches (width height)")
-    p.add_argument("--frame-spacing", default="linear",
-                   choices=["linear", "log"],
-                   help="Frame sampling: 'linear'=evenly spaced, 'log'=denser early frames")
-    p.add_argument("--glc-cmap", default="Blues",
-                   help="Glucose background colormap. Good options: Blues, Greys, cividis")
-    p.add_argument("--cell-cmap", default=None,
-                   help="Cell metric colormap. Default: summer for velocity, Greens for growth_rate")
-    p.add_argument("--cell-edgecolor", default="#1b4332",
-                   help="Cell outline color. Default is dark green rather than black.")
-    p.add_argument("--cell-linewidth", type=float, default=0.6,
-                   help="Cell outline width")
-    p.add_argument("--cell-alpha", type=float, default=0.97,
-                   help="Cell fill opacity")
-    p.add_argument("--cell-cmap-min", type=float, default=0.15,
-                   help="Lower fraction of the cell colormap to use; avoids near-black/near-white extremes")
-    p.add_argument("--cell-cmap-max", type=float, default=0.95,
-                   help="Upper fraction of the cell colormap to use; avoids near-black/near-white extremes")
-    p.add_argument("--glc-alpha", type=float, default=0.85,
-                   help="Glucose background opacity")
-    return p.parse_args(argv)
+
+    axes_comp = [fig.add_subplot(gs[0, c]) for c in range(n)]
+    axes_line = [fig.add_subplot(gs[1, c]) for c in range(n)]
+    axes_flux = [fig.add_subplot(gs[2, c]) for c in range(n)]
+
+    gs_right = gs[:, n].subgridspec(3, 1, height_ratios=[1.05, 0.92, 1.00], hspace=0.28)
+    gs_cbars = gs_right[0].subgridspec(1, 2, width_ratios=[1, 1], wspace=0.65)
+    cax_glc = fig.add_subplot(gs_cbars[0, 0])
+    cax_cell = fig.add_subplot(gs_cbars[0, 1])
+    ax_leg_combined = fig.add_subplot(gs_right[1])
+    ax_leg_flux = fig.add_subplot(gs_right[2])
+    ax_leg_combined.axis("off")
+    ax_leg_flux.axis("off")
+
+    def _add_interpanel_gap(ax_left, ax_right, gap: float = 0.035) -> None:
+        """Widen the horizontal gap between two adjacent panels in one row."""
+        pos_l = ax_left.get_position()
+        pos_r = ax_right.get_position()
+        half = gap / 2.0
+        ax_left.set_position([pos_l.x0, pos_l.y0, pos_l.width - half, pos_l.height])
+        ax_right.set_position([pos_r.x0 + half, pos_r.y0, pos_r.width - half, pos_r.height])
+
+    # ---- Top composite row ----
+    for c, s in enumerate(scenarios):
+        ax = axes_comp[c]
+        d = comp_data[c]
+        draw_composite_panel(
+            ax, s, d["snapshots"], d["Gi"], d["domain_x"], d["domain_y"],
+            glc_norm, glc_cmap, cell_norm, cell_cmap, color_col,
+            cell_radius=cell_radius, x_scale=x_scale, show_time_labels=True,
+            scale=scale,
+        )
+        if c == 0:
+            ax.set_ylabel("y position (µm)")
+        else:
+            ax.set_yticklabels([])
+        ax.set_xlabel("Position along gradient axis (µm)")
+
+    # ---- Vertical colorbars on the right (side-by-side, outward-facing labels) ----
+    cb_glc = fig.colorbar(ScalarMappable(norm=glc_norm, cmap=glc_cmap), cax=cax_glc)
+    cb_glc.set_label("Glucose (mM)", labelpad=5 * scale)
+    cb_glc.ax.yaxis.set_ticks_position("left")
+    cb_glc.ax.yaxis.set_label_position("left")
+    cb_glc.ax.tick_params(labelsize=5 * scale, length=2 * scale, direction="out", pad=2 * scale)
+
+    cb_cell = fig.colorbar(ScalarMappable(norm=cell_norm, cmap=cell_cmap), cax=cax_cell)
+    cb_cell.set_label(cell_label, labelpad=5 * scale)
+    cb_cell.ax.yaxis.set_ticks_position("right")
+    cb_cell.ax.yaxis.set_label_position("right")
+    cb_cell.ax.tick_params(labelsize=5 * scale, length=2 * scale, direction="out", pad=2 * scale)
+
+    for cb in (cb_glc, cb_cell):
+        cb.outline.set_linewidth(0.5 * scale)
+
+    # Determine shared y-limits for line rows.
+    max_speed = max(float(s.df["migration_speed"].max()) for s in scenarios)
+    max_growth = max(float(s.df["growth_rate"].max()) for s in scenarios)
+    max_flux = max(float(max(s.df["atp_flux"].max(), s.df["motility_atp_flux"].max(), s.df["glucose_flux"].abs().max())) for s in scenarios)
+    max_t = max(float(s.df["time_h"].max()) for s in scenarios)
+
+    speed_ylim = (0, max(0.05, max_speed * 1.08))
+    growth_ylim = (0, max(0.05, max_growth * 1.12))
+    flux_ylim = (0, max(1.0, max_flux * 1.12))
+
+    flux_colors = {
+        "atp": "#3366AA",
+        "mot_atp": "#88CCEE",
+        "glucose": "#f1c232",
+    }
+    SPEED_LS = "-"
+    GROWTH_LS = "--"
+
+    combined_handles = None
+    line_twins = []
+    for c, s in enumerate(scenarios):
+        df = s.df
+        t = df["time_h"]
+
+        # Combined migration speed (left, solid) + growth rate (right, dashed).
+        ax = axes_line[c]
+        ax2 = ax.twinx()
+        line_twins.append(ax2)
+        l_speed, = ax.plot(t, df["migration_speed"], color="black",
+                           linestyle=SPEED_LS, label="Migration speed")
+        l_growth, = ax2.plot(t, df["growth_rate"], color="black",
+                             linestyle=GROWTH_LS, label="Growth rate")
+        ax.set_ylim(speed_ylim)
+        ax2.set_ylim(growth_ylim)
+        ax.set_xlim(0, max_t)
+        ax.set_xticklabels([])
+        # Both y-axis labels on every combined panel to avoid ambiguity.
+        ax.set_ylabel("Migration speed\n(µm/min)")
+        ax2.set_ylabel("Growth rate\n(h$^{-1}$)")
+        ax.spines["top"].set_visible(False)
+        ax2.spines["top"].set_visible(False)
+        if combined_handles is None:
+            combined_handles = [l_speed, l_growth]
+
+        # Fluxes
+        ax = axes_flux[c]
+        ax.plot(t, df["atp_flux"], color=flux_colors["atp"], label="Total ATP flux")
+        ax.plot(t, df["motility_atp_flux"], color=flux_colors["mot_atp"], label="Motility ATP flux")
+        ax.plot(t, df["glucose_flux"].abs(), color=flux_colors["glucose"], linestyle="--", label="|Glucose flux|")
+        ax.set_ylim(flux_ylim)
+        ax.set_xlim(0, max_t)
+        ax.set_xlabel("Time (h)")
+        if c == 0:
+            ax.set_ylabel("Flux\n(mmol·gDW$^{-1}$·h$^{-1}$)")
+        else:
+            ax.set_yticklabels([])
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+
+    if n >= 2:
+        _add_interpanel_gap(axes_line[0], axes_line[1], gap=0.045)
+        for ax, ax2 in zip(axes_line, line_twins):
+            ax2.set_position(ax.get_position())
+
+    # Legends on the right, aligned with the C/D and E/F rows.
+    if combined_handles is not None:
+        ax_leg_combined.legend(
+            combined_handles, [h.get_label() for h in combined_handles],
+            loc="center left", frameon=False, handlelength=2.2 * scale,
+        )
+
+    handles, labels = axes_flux[-1].get_legend_handles_labels()
+    ax_leg_flux.legend(
+        handles, labels, loc="center left", frameon=False, handlelength=2.2 * scale,
+    )
+
+    results_dir.mkdir(parents=True, exist_ok=True)
+    out_svg = results_dir / f"{out_name}.svg"
+    out_png = results_dir / f"{out_name}.png"
+    fig.savefig(out_svg)
+    fig.savefig(out_png, dpi=300)
+    plt.close(fig)
+    print(f"Saved: {out_svg}")
+    print(f"Saved: {out_png}")
+
+
+def write_metrics_csv(scenarios: list[Scenario], results_dir: Path) -> None:
+    rows = []
+    for s in scenarios:
+        row = {
+            "output_dir": str(s.output_dir),
+            "title": s.title.replace("\n", " | "),
+            **s.params,
+            **s.summary,
+        }
+        rows.append(row)
+    df = pd.DataFrame(rows)
+    path = results_dir / "representative_scenarios_metrics.csv"
+    df.to_csv(path, index=False)
+    print(f"Saved: {path}")
+
+
+# -----------------------------------------------------------------------------
+# CLI
+# -----------------------------------------------------------------------------
+
+
+def parse_scenario_arg(s: str) -> tuple[Path, str | None]:
+    if "::" in s:
+        path, title = s.split("::", 1)
+        return Path(path), title.replace("\\n", "\n")
+    return Path(s), None
 
 
 def main(argv=None) -> None:
-    args = _parse_args(argv)
-
-    out_stem = os.path.join(
-        args.results_dir,
-        f"cell_migration_composite_{args.color_by}",
+    p = argparse.ArgumentParser(
+        description="Create a journal-style representative scenario comparison figure.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    p.add_argument("--runs-dir", default="runs", help="Runs directory used for automatic scenario selection")
+    p.add_argument("--results-dir", default="results/representative_scenarios", help="Output directory")
+    p.add_argument("--scenario", action="append", default=[],
+                   help="Manual scenario as output_dir::Title. Repeat 2 or 3 times. If omitted, scenarios are auto-selected from --runs-dir.")
+    p.add_argument("--out-name", default="fig_representative_scenarios", help="Output basename without extension")
+    p.add_argument("--growth-threshold", type=float, default=1e-3, help="Growth-rate threshold for automatic scenario classification")
+    p.add_argument("--movement-threshold", type=float, default=1e-3, help="Migration-speed threshold for automatic scenario classification")
+    p.add_argument("--max-scenarios", type=int, default=3, choices=[2, 3], help="Number of scenarios to plot when auto-selecting")
+    p.add_argument("--composite-color-by", default="growth_rate", choices=["growth_rate", "velocity"],
+                   help="Cell color in the top trajectory panels")
+    p.add_argument("--n-frames", type=int, default=7, help="Number of cell snapshots shown in the composite panels")
+    p.add_argument("--frame-spacing", default="linear", choices=["linear", "log"], help="Snapshot sampling for composite panels")
+    p.add_argument("--cell-radius", type=float, default=4.0, help="Display cell radius in µm. Use a larger value for visibility.")
+    p.add_argument("--glc-frame", default="last", choices=["first", "last"], help="Microenvironment frame used for glucose background")
+    p.add_argument("--glc-cmap", default="yellow", help="Glucose background colormap ('yellow' for the project gold gradient, or any Matplotlib colormap name)")
+    p.add_argument("--x-scale", default="linear", choices=["linear", "symlog"], help="X-axis scaling for composite panels")
+    p.add_argument("--growth-color-vmax", type=float, default=None,
+                   help="Upper bound for the growth-rate cell color scale. Lower it to reveal contrast among low-growth cells (peak cells saturate).")
+    p.add_argument("--scale", type=float, default=3.0,
+                   help="Uniform scale factor for figure size, fonts, and line weights.")
+    args = p.parse_args(argv)
 
-    plot_composite(
-        output_dir    = args.output_dir,
-        out_stem      = out_stem,
-        color_by      = args.color_by,
-        n_frames      = args.n_frames,
-        glc_frame     = args.glc_frame,
-        dpi           = args.dpi,
-        cell_radius   = args.cell_radius,
-        x_scale       = args.x_scale,
-        show_glc_bg   = not args.no_glc_bg,
-        figsize       = tuple(args.figsize),
-        frame_spacing = args.frame_spacing,
-        glc_cmap      = args.glc_cmap,
-        cell_cmap     = args.cell_cmap,
-        cell_edgecolor= args.cell_edgecolor,
-        cell_linewidth= args.cell_linewidth,
-        cell_alpha    = args.cell_alpha,
-        glc_alpha     = args.glc_alpha,
-        cell_cmap_min = args.cell_cmap_min,
-        cell_cmap_max = args.cell_cmap_max,
+    results_dir = Path(args.results_dir)
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.scenario:
+        scenarios = []
+        for scen_arg in args.scenario:
+            path, title = parse_scenario_arg(scen_arg)
+            if not path.exists():
+                raise FileNotFoundError(f"Scenario output directory does not exist: {path}")
+            scenarios.append(make_scenario(path, title, args.growth_threshold, args.movement_threshold))
+        if len(scenarios) not in (2, 3):
+            raise ValueError("Please provide either 2 or 3 --scenario arguments.")
+    else:
+        scenarios = auto_select_scenarios(Path(args.runs_dir), args.growth_threshold, args.movement_threshold, args.max_scenarios)
+
+    print("Selected scenarios:")
+    for s in scenarios:
+        print(f"  - {s.title.replace(chr(10), ' | ')}")
+        print(f"    {s.output_dir}")
+
+    write_metrics_csv(scenarios, results_dir)
+    plot_representative_figure(
+        scenarios=scenarios,
+        results_dir=results_dir,
+        out_name=args.out_name,
+        composite_color_by=args.composite_color_by,
+        n_frames=args.n_frames,
+        frame_spacing=args.frame_spacing,
+        cell_radius=args.cell_radius,
+        glc_frame=args.glc_frame,
+        glc_cmap_name=args.glc_cmap,
+        x_scale=args.x_scale,
+        growth_color_vmax=args.growth_color_vmax,
+        scale=args.scale,
     )
 
 
