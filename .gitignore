@@ -47,4 +47,5 @@ notebooks/
 sample_projects_intracellular/fba/crossfeeding/config/sbml_models/not_used/
 sample_projects_intracellular/fba/crossfeeding/scripts/cluster_scripts/
 sample_projects_intracellular/fba/crossfeeding/config/old_config_files_not_used/
+sample_projects_intracellular/fba/crossfeeding/config/initial_setup/
 .local_backups/

@@ -1,5 +1,0 @@
-x,y,z,type,volume,cycle entry,custom:GFP,custom:sample
-0.0,0.0,0.0,c_beijerinckii
-2.0,0.0,0.0,m_barkeri
-2.0,4.0,0.0,m_barkeri
-2.0,-4.0,0.0,m_barkeri
