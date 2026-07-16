@@ -10,6 +10,7 @@ addons/PhysiBoSS/libMaBoSS-*.tar.gz
 biorobots
 cancer_immune_3D
 config/PhysiCell_settings-backup.xml
+sample_projects_intracellular/fba/crossfeeding/config/PhysiCell_settings-backup.xml
 heterogeneity
 initial.svg
 interaction_demo
@@ -42,3 +43,10 @@ output/cells.csv
 notebooks/
 
 **/.ipynb_checkpoints/
+
+# local test stuff
+sample_projects_intracellular/fba/crossfeeding/config/sbml_models/not_used/
+sample_projects_intracellular/fba/crossfeeding/scripts/cluster_scripts/
+sample_projects_intracellular/fba/crossfeeding/config/old_config_files_not_used/
+sample_projects_intracellular/fba/crossfeeding/config/initial_setup/
+.local_backups/
