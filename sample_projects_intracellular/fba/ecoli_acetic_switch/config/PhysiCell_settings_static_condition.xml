@@ -339,7 +339,7 @@
 
     <initial_conditions>
         <cell_positions type="csv" enabled="true">
-            <folder>/gpfs/scratch/bsc08/bsc219297/PhysiCelldFBA/config/</folder>
+            <folder>./config/</folder>
             <filename>cells_reduced.csv</filename>
         </cell_positions>
     </initial_conditions>
