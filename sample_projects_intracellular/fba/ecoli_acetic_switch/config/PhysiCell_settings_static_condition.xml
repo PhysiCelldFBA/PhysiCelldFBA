@@ -19,7 +19,7 @@
         <dx>1.0</dx>
         <dy>1.0</dy>
         <dz>1.0</dz>
-        <use_2D>false</use_2D>
+        <use_2D>true</use_2D>
     </domain>
 
     <overall>
@@ -38,11 +38,11 @@
     <save>
         <folder>output</folder>
         <full_data>
-            <interval units="min">5</interval>
+            <interval units="min">1</interval>
             <enable>true</enable>
         </full_data>
         <SVG>
-            <interval units="min">5</interval>
+            <interval units="min">1</interval>
             <enable>true</enable>
             <plot_substrate enabled="true" limits="false">
                 <substrate>oxygen</substrate>
@@ -65,7 +65,7 @@
     <microenvironment_setup>
         <variable name="oxygen" units="dimensionless" ID="0">
             <physical_parameter_set>
-                <diffusion_coefficient units="micron^2/min">12000.0</diffusion_coefficient>
+                <diffusion_coefficient units="micron^2/min">100000.0</diffusion_coefficient>
                 <decay_rate units="1/min">0.0</decay_rate>
             </physical_parameter_set>
             <initial_condition units="mM">5</initial_condition>
@@ -81,7 +81,7 @@
         </variable>
         <variable name="glucose" units="dimensionless" ID="1">
             <physical_parameter_set>
-                <diffusion_coefficient units="micron^2/min">4000.0</diffusion_coefficient>
+                <diffusion_coefficient units="micron^2/min">46800.0</diffusion_coefficient>
                 <decay_rate units="1/min">0.0</decay_rate>
             </physical_parameter_set>
             <initial_condition units="mM">8.0</initial_condition>
@@ -97,7 +97,7 @@
         </variable>
         <variable name="acetate" units="dimensionless" ID="2">
             <physical_parameter_set>
-                <diffusion_coefficient units="micron^2/min">6500.00</diffusion_coefficient>
+                <diffusion_coefficient units="micron^2/min">72000.00</diffusion_coefficient>
                 <decay_rate units="1/min">0.0</decay_rate>
             </physical_parameter_set>
             <initial_condition units="mmol">0.0</initial_condition>
@@ -113,7 +113,7 @@
         </variable>
         <variable name="CO2" units="dimensionless" ID="3">
             <physical_parameter_set>
-                <diffusion_coefficient units="micron^2/min">2233</diffusion_coefficient>
+                <diffusion_coefficient units="micron^2/min">115000</diffusion_coefficient>
                 <decay_rate units="1/min">0.0</decay_rate>
             </physical_parameter_set>
             <initial_condition units="dimensionless">0.0</initial_condition>
@@ -194,7 +194,7 @@
                 </volume>
                 <mechanics>
                     <cell_cell_adhesion_strength units="micron/min">0.4</cell_cell_adhesion_strength>
-                    <cell_cell_repulsion_strength units="micron/min">100.0</cell_cell_repulsion_strength>
+                    <cell_cell_repulsion_strength units="micron/min">10.0</cell_cell_repulsion_strength>
                     <relative_maximum_adhesion_distance units="dimensionless">1.25</relative_maximum_adhesion_distance>
                     <cell_adhesion_affinities>
                         <cell_adhesion_affinity name="ecoli">1.0</cell_adhesion_affinity>
