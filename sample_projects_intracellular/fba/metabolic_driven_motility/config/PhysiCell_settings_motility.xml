@@ -37,7 +37,7 @@
     </parallel>
 
     <save>
-        <folder>output</folder>
+        <folder>output_motility_lit</folder>
         <full_data>
             <interval units="min">5</interval>
             <enable>true</enable>
@@ -64,7 +64,7 @@
     <microenvironment_setup>
         <variable name="oxygen" units="dimensionless" ID="0">
             <physical_parameter_set>
-                <diffusion_coefficient units="micron^2/min">12000.0</diffusion_coefficient>
+                <diffusion_coefficient units="micron^2/min">100000.0</diffusion_coefficient>
                 <decay_rate units="1/min">0.0</decay_rate>
             </physical_parameter_set>
             <initial_condition units="mM">4</initial_condition>
@@ -80,14 +80,14 @@
         </variable>
         <variable name="glucose" units="dimensionless" ID="1">
             <physical_parameter_set>
-                <diffusion_coefficient units="micron^2/min">4000.0</diffusion_coefficient>
+                <diffusion_coefficient units="micron^2/min">46800.0</diffusion_coefficient>
                 <decay_rate units="1/min">0.0</decay_rate>
             </physical_parameter_set>
             <initial_condition units="mM">0.0</initial_condition>
             <Dirichlet_boundary_condition units="mM" enabled="True">0.0</Dirichlet_boundary_condition>
             <Dirichlet_options>
                 <boundary_value ID="xmin" enabled="True">0</boundary_value>  
-                <boundary_value ID="xmax" enabled="True">0.65</boundary_value>  
+                <boundary_value ID="xmax" enabled="True">0.55</boundary_value>  
                 <boundary_value ID="ymin" enabled="False">0</boundary_value>
                 <boundary_value ID="ymax" enabled="False">0</boundary_value>
                 <boundary_value ID="zmin" enabled="False">0</boundary_value>
@@ -96,7 +96,7 @@
         </variable>
         <variable name="acetate" units="dimensionless" ID="2">
             <physical_parameter_set>
-                <diffusion_coefficient units="micron^2/min">6500.00</diffusion_coefficient>
+                <diffusion_coefficient units="micron^2/min">72000.00</diffusion_coefficient>
                 <decay_rate units="1/min">0.0</decay_rate>
             </physical_parameter_set>
             <initial_condition units="mmol">0.0</initial_condition>
@@ -112,7 +112,7 @@
         </variable>
         <variable name="CO2" units="dimensionless" ID="3">
             <physical_parameter_set>
-                <diffusion_coefficient units="micron^2/min">2233</diffusion_coefficient>
+                <diffusion_coefficient units="micron^2/min">115000</diffusion_coefficient>
                 <decay_rate units="1/min">0.0</decay_rate>
             </physical_parameter_set>
             <initial_condition units="dimensionless">0.0</initial_condition>
@@ -290,7 +290,7 @@
                     <transport_model>
                         <exchange substrate="glucose">
                             <fba_flux>R_EX_glc__D_e</fba_flux>
-                            <Km units="mM">0.5</Km>
+                            <Km units="mM">0.8</Km>
                             <Vmax units="fmol/pg DW cell/min">8.0</Vmax>
                         </exchange>
                         <exchange substrate="acetate">
