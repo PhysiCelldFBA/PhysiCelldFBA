@@ -190,10 +190,10 @@ void setup_secretion_nodes( void )
 
 	// Source centre positions
 	std::vector<std::vector<double>> centers = {
-		{-175.0,  175.0, 0.0},
-		{-175.0, -175.0, 0.0},
-		{ 175.0,  175.0, 0.0},
-		{ 175.0, -175.0, 0.0}
+		{-90.0,  90.0, 0.0},
+		{-90.0, -90.0, 0.0},
+		{ 90.0,  90.0, 0.0},
+		{ 90.0, -90.0, 0.0}
 	};
 
 	// Neighbourhood radius: 1 = single voxel, 2 = Moore (3x3), 3 = 5x5, ...
