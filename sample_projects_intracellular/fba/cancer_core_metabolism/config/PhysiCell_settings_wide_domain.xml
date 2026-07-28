@@ -21,7 +21,7 @@
     <use_2D>false</use_2D>
   </domain>
   <overall>
-    <max_time units="min">2880</max_time>
+    <max_time units="min">4320</max_time>
     <time_units>min</time_units>
     <space_units>micron</space_units>
     <dt_diffusion units="min">0.01</dt_diffusion>
@@ -117,13 +117,13 @@
     </variable>
     <variable name="D-Glucose" units="dimensionless" ID="4">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
       <Dirichlet_boundary_condition units="mM" enabled="true">0.0</Dirichlet_boundary_condition>
       <Dirichlet_options>
-        <boundary_value ID="xmin" enabled="true">1.0</boundary_value>
+        <boundary_value ID="xmin" enabled="true">0.5</boundary_value>
         <boundary_value ID="xmax" enabled="true">0.2</boundary_value>
         <boundary_value ID="ymin" enabled="false">0.0</boundary_value>
         <boundary_value ID="ymax" enabled="false">0.0</boundary_value>
@@ -389,13 +389,13 @@
     </variable>
     <variable name="O2" units="dimensionless" ID="24">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <diffusion_coefficient units="micron^2/min">100000</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
       <Dirichlet_boundary_condition units="mM" enabled="true">0.0</Dirichlet_boundary_condition>
       <Dirichlet_options>
-        <boundary_value ID="xmin" enabled="true">1.0</boundary_value>
+        <boundary_value ID="xmin" enabled="true">0.5</boundary_value>
         <boundary_value ID="xmax" enabled="true">0.0</boundary_value>
         <boundary_value ID="ymin" enabled="false">0.0</boundary_value>
         <boundary_value ID="ymax" enabled="false">0.0</boundary_value>
@@ -725,7 +725,7 @@
             </exchange>
             <exchange substrate="D-Glucose">
               <fba_flux>R_EX_glc_e</fba_flux>
-              <Km units="mM">1.0</Km>
+              <Km units="mM">5.0</Km>
               <Vmax units="mmol/g DW cell/min">1.0</Vmax>
             </exchange>
             <exchange substrate="L-Glutamine">
@@ -770,7 +770,7 @@
             </exchange>
             <exchange substrate="O2">
               <fba_flux>R_EX_o2_e</fba_flux>
-              <Km units="mM">1.0</Km>
+              <Km units="mM">0.5</Km>
               <Vmax units="mmol/g DW cell/min">1.0</Vmax>
             </exchange>
             <exchange substrate="Ornithine">

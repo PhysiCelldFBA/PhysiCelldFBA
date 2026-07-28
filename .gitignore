@@ -64,3 +64,5 @@ output/cells.csv
 /unit_tests
 /test_custom_DCs
 /test_voxel_values
+__pycache__/
+*.py[cod]
