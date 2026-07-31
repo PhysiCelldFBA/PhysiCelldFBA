@@ -69,7 +69,8 @@
     </options>
     <variable name="Ammonium" units="dimensionless" ID="0">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -85,7 +86,8 @@
     </variable>
     <variable name="CO2" units="dimensionless" ID="1">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Aqueous (membrane-permeable; Cole hindrance not applied) -->
+        <diffusion_coefficient units="micron^2/min">115000</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -101,7 +103,8 @@
     </variable>
     <variable name="Choline" units="dimensionless" ID="2">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -117,6 +120,7 @@
     </variable>
     <variable name="D-Glucose" units="dimensionless" ID="4">
       <physical_parameter_set>
+        <!-- Cole Deff: (1-rho)/(1+rho/2)*D_water; rho~0.74, D_water,Glc=46800 -->
         <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
@@ -124,7 +128,7 @@
       <Dirichlet_boundary_condition units="mM" enabled="true">0.0</Dirichlet_boundary_condition>
       <Dirichlet_options>
         <boundary_value ID="xmin" enabled="true">0.5</boundary_value>
-        <boundary_value ID="xmax" enabled="true">0.2</boundary_value>
+        <boundary_value ID="xmax" enabled="true">0</boundary_value>
         <boundary_value ID="ymin" enabled="false">0.0</boundary_value>
         <boundary_value ID="ymax" enabled="false">0.0</boundary_value>
         <boundary_value ID="zmin" enabled="false">0.0</boundary_value>
@@ -133,7 +137,8 @@
     </variable>
     <variable name="Glycine" units="dimensionless" ID="5">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -149,7 +154,8 @@
     </variable>
     <variable name="L-Arginine" units="dimensionless" ID="7">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -165,7 +171,8 @@
     </variable>
     <variable name="L-Asparagine" units="dimensionless" ID="8">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -181,7 +188,8 @@
     </variable>
     <variable name="L-Aspartate" units="dimensionless" ID="9">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -197,7 +205,8 @@
     </variable>
     <variable name="L-Glutamate" units="dimensionless" ID="10">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -213,7 +222,8 @@
     </variable>
     <variable name="L-Glutamine" units="dimensionless" ID="11">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -229,7 +239,8 @@
     </variable>
     <variable name="L-Isoleucine" units="dimensionless" ID="12">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -245,7 +256,8 @@
     </variable>
     <variable name="L-Lactate" units="dimensionless" ID="13">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -261,7 +273,8 @@
     </variable>
     <variable name="L-Leucine" units="dimensionless" ID="14">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -277,7 +290,8 @@
     </variable>
     <variable name="L-Lysine" units="dimensionless" ID="15">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -293,7 +307,8 @@
     </variable>
     <variable name="L-Phenylalanine" units="dimensionless" ID="17">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -309,7 +324,8 @@
     </variable>
     <variable name="L-Serine" units="dimensionless" ID="19">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -325,7 +341,8 @@
     </variable>
     <variable name="L-Threonine" units="dimensionless" ID="20">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -341,7 +358,8 @@
     </variable>
     <variable name="L-Tryptophan" units="dimensionless" ID="21">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -357,7 +375,8 @@
     </variable>
     <variable name="L-Tyrosine" units="dimensionless" ID="22">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -373,7 +392,8 @@
     </variable>
     <variable name="L-Valine" units="dimensionless" ID="23">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -389,6 +409,7 @@
     </variable>
     <variable name="O2" units="dimensionless" ID="24">
       <physical_parameter_set>
+        <!-- Aqueous (membrane-permeable; Cole hindrance not applied) -->
         <diffusion_coefficient units="micron^2/min">100000</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
@@ -405,7 +426,8 @@
     </variable>
     <variable name="Ornithine" units="dimensionless" ID="25">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>
@@ -421,7 +443,8 @@
     </variable>
     <variable name="Phosphate" units="dimensionless" ID="26">
       <physical_parameter_set>
-        <diffusion_coefficient units="micron^2/min">50000.0</diffusion_coefficient>
+        <!-- Matched to Cole D_eff,Glc (membrane-impermeable) -->
+        <diffusion_coefficient units="micron^2/min">8921</diffusion_coefficient>
         <decay_rate units="1/min">0.0</decay_rate>
       </physical_parameter_set>
       <initial_condition units="mM">0.0</initial_condition>

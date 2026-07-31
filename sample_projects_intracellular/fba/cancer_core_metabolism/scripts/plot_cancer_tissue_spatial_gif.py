@@ -86,16 +86,47 @@ _SUBSTRATE_YLABELS = {
 }
 
 
-def _fig_to_rgba(fig, *, tight: bool = True) -> np.ndarray:
+def _fig_to_rgba(fig, *, tight: bool = True, pad_inches: float = 0.04) -> np.ndarray:
     buf = io.BytesIO()
     if tight:
-        fig.savefig(buf, format="png", dpi=110, bbox_inches="tight", pad_inches=0.04)
+        fig.savefig(
+            buf, format="png", dpi=110, bbox_inches="tight", pad_inches=pad_inches
+        )
     else:
         # Fixed canvas so stacked rows share the same pixel width / axes alignment
         fig.savefig(buf, format="png", dpi=110, bbox_inches=None, pad_inches=0)
     plt.close(fig)
     buf.seek(0)
     return np.asarray(Image.open(buf).convert("RGBA"))
+
+
+def _pad_to_common_width(panels: list[np.ndarray], *, align: str = "left") -> list[np.ndarray]:
+    """Pad panels to a shared width so vertical stacks stay column-aligned."""
+    w = max(p.shape[1] for p in panels)
+    out = []
+    for p in panels:
+        if p.shape[1] == w:
+            out.append(p)
+            continue
+        canvas = np.full((p.shape[0], w, 4), 255, dtype=np.uint8)
+        canvas[..., 3] = 255
+        if align == "right":
+            canvas[:, w - p.shape[1] :] = p
+        else:
+            canvas[:, : p.shape[1]] = p
+        out.append(canvas)
+    return out
+
+
+def _trim_right_whitespace(arr: np.ndarray, *, pad: int = 36) -> np.ndarray:
+    """Drop trailing nearly-white columns, keeping ``pad`` px after content."""
+    rgb = arr[..., :3]
+    content = np.any(rgb < 250, axis=2)
+    cols = np.where(content.any(axis=0))[0]
+    if cols.size == 0:
+        return arr
+    right = min(arr.shape[1], int(cols[-1]) + 1 + max(pad, 0))
+    return arr[:, :right]
 
 
 def _pad_to_common_size(frames: list[np.ndarray]) -> list[np.ndarray]:
@@ -198,8 +229,8 @@ def _living_value_extent(
 def _row_style(base: dict, *, top: bool, bottom: bool) -> dict:
     """Match static spatial SVG width; keep left/right layout identical across rows."""
     style = dict(base)
-    # Same footprint as glycine_uptake_*.svg / DEFAULT_STYLE
-    style["figsize"] = (16.0, 5.6)
+    # Wide canvas: colorbar + ylabel use ~0.68–0.90; 0.90–1.0 is spare margin
+    style["figsize"] = (20.0, 5.6)
     style["zone_labels"] = top
     # Keep vessel label on every row so left margin stays fixed (aligned columns)
     style["vessel_label"] = True
@@ -210,11 +241,78 @@ def _row_style(base: dict, *, top: bool, bottom: bool) -> dict:
     return style
 
 
-def _lock_stack_layout(fig, *, top: bool, bottom: bool) -> None:
-    """Identical left/right so tissue + colorbar columns line up in the stack."""
+# Layout fractions for stack rows: tissue | colorbar | ylabel | spare right margin.
+# Spare margin matters because stack frames are saved with bbox_inches=None.
+_STACK_RIGHT = 0.68
+_STACK_CAX = (0.695, 0.18, 0.012, 0.68)  # left, bottom, width, height
+
+
+def _lock_stack_layout(
+    fig, *, top: bool, bottom: bool, show_colorbar: bool = True
+) -> None:
+    """Identical left/right so tissue (+ optional colorbar) columns line up."""
     top_m = 0.90 if top else 0.96
     bottom_m = 0.18 if bottom else 0.06
-    fig.subplots_adjust(left=0.09, right=0.895, top=top_m, bottom=bottom_m)
+    right = _STACK_RIGHT if show_colorbar else 0.98
+    fig.subplots_adjust(left=0.08, right=right, top=top_m, bottom=bottom_m)
+    if show_colorbar and len(fig.axes) >= 2:
+        cax = fig.axes[-1]
+        # Match vertical span to row (top row has zone labels → slightly lower top)
+        cax_top = 0.18
+        cax_h = (top_m - 0.04) - cax_top
+        cax.set_position((_STACK_CAX[0], cax_top, _STACK_CAX[2], max(cax_h, 0.5)))
+        ylabel = cax.get_ylabel()
+        if ylabel:
+            cax.set_ylabel(ylabel, labelpad=8)
+
+
+def _place_time_above_colorbar(fig, t: float, *, fontsize: float) -> None:
+    """Put ``t = N h`` on top of the colorbar, y-aligned with zone labels."""
+    if len(fig.axes) < 2:
+        fig.text(
+            0.98,
+            0.97,
+            f"t = {t:.0f} h",
+            ha="right",
+            va="top",
+            fontsize=fontsize,
+            transform=fig.transFigure,
+            color="black",
+            clip_on=False,
+        )
+        return
+
+    ax, cax = fig.axes[0], fig.axes[-1]
+    y_lo, y_hi = sorted(ax.get_ylim())
+    # Same baseline as zone labels in plot_cells_spatial
+    y_text = y_hi + 0.04 * (y_hi - y_lo)
+    _, y_disp = ax.transData.transform((0.0, y_text))
+    _, y_fig = fig.transFigure.inverted().transform((0.0, y_disp))
+
+    # Center on the colorbar strip + tick labels (exclude the vertical ylabel,
+    # which sits further right and would pull the timestamp off the bar).
+    from matplotlib.transforms import Bbox
+
+    renderer = fig.canvas.get_renderer()
+    boxes = [cax.get_window_extent(renderer=renderer)]
+    for tick in cax.get_yticklabels():
+        if tick.get_visible():
+            boxes.append(tick.get_window_extent(renderer=renderer))
+    bbox = Bbox.union(boxes)
+    bb_fig = bbox.transformed(fig.transFigure.inverted())
+    x_fig = 0.5 * (bb_fig.x0 + bb_fig.x1)
+
+    fig.text(
+        x_fig,
+        y_fig,
+        f"t = {t:.0f} h",
+        ha="center",
+        va="bottom",
+        fontsize=fontsize,
+        transform=fig.transFigure,
+        color="black",
+        clip_on=False,
+    )
 
 
 def _render_stem(
@@ -245,15 +343,12 @@ def _render_stem(
             color_config=spec["color_config"],
             **kwargs,
         )
-        fig.text(
-            0.88,
-            0.97,
-            f"t = {t:.0f} h",
-            ha="right",
-            va="top",
-            fontsize=style.get("annotation_fontsize", 15),
-            transform=fig.transFigure,
-            color="black",
+        # Needed so data→figure transforms for the time label are valid
+        fig.canvas.draw()
+        _place_time_above_colorbar(
+            fig,
+            t,
+            fontsize=float(style.get("annotation_fontsize", 15)),
         )
         frames.append(_fig_to_rgba(fig))
     return frames
@@ -264,6 +359,8 @@ def _render_uptake_stack(
     times: list[float],
     specs: list[dict],
     base_style: dict,
+    *,
+    show_colorbar: bool = True,
 ) -> list[np.ndarray]:
     """One GIF frame = vertical stack of spatial maps."""
     # Fixed color scales across time (per substrate)
@@ -292,14 +389,21 @@ def _render_uptake_stack(
             vmin, vmax = vlims[spec["stem"]]
             kwargs["vmin"] = vmin
             kwargs["vmax"] = vmax
+            kwargs["show_colorbar"] = show_colorbar
             fig = plot_cells_spatial(
                 df_cells,
                 time_point=t,
                 color_config=spec["color_config"],
                 **kwargs,
             )
-            _lock_stack_layout(fig, top=(j == 0), bottom=(j == n_spec - 1))
-            if j == 0:
+            _lock_stack_layout(
+                fig,
+                top=(j == 0),
+                bottom=(j == n_spec - 1),
+                show_colorbar=show_colorbar,
+            )
+            # Time stamp only on multi-frame GIFs (static single-frame stacks omit it)
+            if j == 0 and len(times) > 1:
                 fig.text(
                     0.98,
                     0.99,
@@ -310,8 +414,10 @@ def _render_uptake_stack(
                     transform=fig.transFigure,
                     color="black",
                 )
+            # Fixed canvas (non-tight) keeps vessel columns aligned across rows;
+            # figsize/margins leave room for long colorbar ylabels (e.g. O₂).
             panels.append(_fig_to_rgba(fig, tight=False))
-        frames.append(_stack_vertical(panels, gap=4))
+        frames.append(_trim_right_whitespace(_stack_vertical(panels, gap=4), pad=40))
     return frames
 
 
@@ -495,7 +601,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         "--output-dir",
         type=Path,
         default=None,
-        help="PhysiCell output folder (default: local output_lit or ./output).",
+        help="PhysiCell output folder (default: ./output if present).",
     )
     parser.add_argument("--fig-dir", type=Path, default=None)
     parser.add_argument(
@@ -519,6 +625,11 @@ def main(argv: Optional[list[str]] = None) -> int:
             "Comma-separated stems for --uptake-stack "
             "(default: oxygen,glucose,glutamine,glycine,lactate)."
         ),
+    )
+    parser.add_argument(
+        "--no-colorbar",
+        action="store_true",
+        help="Hide colorbars on uptake-stack panels (shared scales still apply).",
     )
     parser.add_argument(
         "--substrate-profiles",
@@ -654,9 +765,18 @@ def main(argv: Optional[list[str]] = None) -> int:
         if not specs:
             raise SystemExit("No valid stems for --uptake-stack")
         print(f"- Rendering uptake stack ({len(specs)} rows) …")
-        frames = _render_uptake_stack(df_cells, times, specs, style)
+        frames = _render_uptake_stack(
+            df_cells,
+            times,
+            specs,
+            style,
+            show_colorbar=not args.no_colorbar,
+        )
+        gif_name = (
+            "uptake_stack_no_cbar.gif" if args.no_colorbar else "uptake_stack.gif"
+        )
         _save_gif(
-            fig_dir / "uptake_stack.gif",
+            fig_dir / gif_name,
             frames,
             args.duration_ms,
             args.loop,

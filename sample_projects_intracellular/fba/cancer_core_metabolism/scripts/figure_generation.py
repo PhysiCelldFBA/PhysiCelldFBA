@@ -7,7 +7,7 @@ the sample project or repo root:
 
     # Growth + metabolite maps + uptake stack + profiles at 72 h
     python scripts/figure_generation.py \\
-        --output-dir /path/to/PhysiCell/output \\
+        --output-dir ./output \\
         --time-point 72 \\
         --panels \\
         --uptake-stack \\
@@ -22,8 +22,8 @@ the sample project or repo root:
     # Hourly GIF of the uptake stack
     python scripts/figure_generation.py --gif-uptake-stack --duration-ms 250
 
-Defaults resolve ``output_lit`` under test_parameters_results when present,
-otherwise ``./output``.
+Default ``--output-dir`` is ``./output`` (or the first existing candidate from
+``figure_paths.default_output_dir``). Pass an explicit path for other runs.
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ def main(argv: list[str] | None = None) -> int:
         "--output-dir",
         type=Path,
         default=None,
-        help="PhysiCell output folder (default: auto-detect output_lit or ./output).",
+        help="PhysiCell output folder (default: ./output if present).",
     )
     parser.add_argument("--fig-dir", type=Path, default=None)
     parser.add_argument("--time-point", type=float, default=72.0)
@@ -74,6 +74,11 @@ def main(argv: list[str] | None = None) -> int:
         "--stack-stems",
         default=None,
         help="Comma-separated stems for the uptake stack.",
+    )
+    parser.add_argument(
+        "--no-colorbar",
+        action="store_true",
+        help="Hide colorbars on uptake-stack panels (static PNG and GIF).",
     )
     parser.add_argument(
         "--substrate-profiles",
@@ -174,6 +179,8 @@ def main(argv: list[str] | None = None) -> int:
             static_argv.append("--uptake-stack")
             if args.stack_stems:
                 static_argv += ["--stack-stems", args.stack_stems]
+            if args.no_colorbar:
+                static_argv.append("--no-colorbar")
         if args.substrate_profiles:
             static_argv.append("--substrate-profiles")
             if args.profile_substrates:
@@ -216,6 +223,8 @@ def main(argv: list[str] | None = None) -> int:
             gif_argv.append("--uptake-stack")
             if args.stack_stems:
                 gif_argv += ["--stack-stems", args.stack_stems]
+            if args.no_colorbar:
+                gif_argv.append("--no-colorbar")
         if args.gif_substrate_profiles:
             gif_argv.append("--substrate-profiles")
             if args.profile_substrates:

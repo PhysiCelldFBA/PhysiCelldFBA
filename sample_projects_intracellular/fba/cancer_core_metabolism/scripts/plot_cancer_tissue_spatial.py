@@ -13,11 +13,11 @@ Outputs are named ``{stem}_{t}h.svg`` (and ``uptake_stack_{t}h.png`` /
 Examples
 --------
     python scripts/plot_cancer_tissue_spatial.py \\
-        --output-dir /path/to/output \\
+        --output-dir ./output \\
         --time-point 72
 
     python scripts/plot_cancer_tissue_spatial.py \\
-        --output-dir /path/to/output \\
+        --output-dir ./output \\
         --time-point 72 --uptake-stack
 
     python scripts/plot_cancer_tissue_spatial.py \\
@@ -140,7 +140,6 @@ def cell_column_names_from_tree(tree, sep="_"):
 
 
 def read_cells(reader, drop_cols=None, time_interval=60, max_time=-1):
-    """Load cell time series, bypassing pctk's cells_as_frames_iterator size limit."""
     if drop_cols is None:
         drop_cols = _DROP_COLS
     df_list = []
@@ -299,7 +298,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         "--output-dir",
         type=Path,
         default=None,
-        help="PhysiCell output folder (default: local output_lit or ./output).",
+        help="PhysiCell output folder (default: ./output if present).",
     )
     parser.add_argument("--time-point", type=float, default=48.0, help="Time in hours.")
     parser.add_argument(
@@ -338,6 +337,11 @@ def main(argv: Optional[list[str]] = None) -> int:
             "Comma-separated stems for --uptake-stack "
             "(default: oxygen,glucose,glutamine,glycine,lactate)."
         ),
+    )
+    parser.add_argument(
+        "--no-colorbar",
+        action="store_true",
+        help="Hide colorbars on uptake-stack panels.",
     )
     parser.add_argument(
         "--substrate-profiles",
@@ -486,9 +490,14 @@ def main(argv: Optional[list[str]] = None) -> int:
             f"({len(stack_specs)} rows) …"
         )
         frames = _render_uptake_stack(
-            df_cells, [time_point], stack_specs, _DEFAULT_STYLE
+            df_cells,
+            [time_point],
+            stack_specs,
+            _DEFAULT_STYLE,
+            show_colorbar=not args.no_colorbar,
         )
-        out = fig_dir / f"uptake_stack_{time_point:.0f}h.png"
+        stem = "uptake_stack_no_cbar" if args.no_colorbar else "uptake_stack"
+        out = fig_dir / f"{stem}_{time_point:.0f}h.png"
         Image.fromarray(frames[0]).save(out)
         print(f"  wrote {out}")
 
