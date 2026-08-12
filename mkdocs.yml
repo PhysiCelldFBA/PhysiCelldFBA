@@ -1,0 +1,93 @@
+site_name: PhysiCelldFBA
+site_description: Dynamic flux balance analysis in spatial PhysiCell simulations
+site_url: https://physicelldfba.github.io/PhysiCelldFBA/
+repo_name: PhysiCelldFBA/PhysiCelldFBA
+repo_url: https://github.com/PhysiCelldFBA/PhysiCelldFBA
+edit_uri: ""
+
+theme:
+  name: material
+  language: en
+  features:
+    - content.code.copy
+    - navigation.footer
+    - navigation.indexes
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - search.highlight
+    - search.suggest
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: cyan
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: cyan
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Requirements: getting-started/requirements.md
+      - Installation: getting-started/installation.md
+      - First simulation: getting-started/first-simulation.md
+  - How it works:
+      - Framework overview: concepts/overview.md
+      - dFBA update cycle: concepts/update-cycle.md
+      - Units and mass conservation: concepts/units-and-mass-conservation.md
+  - Configuration:
+      - Prepare an SBML model: configuration/sbml.md
+      - PhysiCell XML: configuration/physicell-xml.md
+      - Helper scripts: configuration/helper-scripts.md
+      - Parameter reference: configuration/parameters.md
+  - Add-on code guide: addon/index.md
+  - Examples:
+      - Overview: examples/index.md
+      - Mass-conservation test: examples/unit-test.md
+      - E. coli acetate switch: examples/acetate-switch.md
+      - E. coli colony: examples/bacterial-colony.md
+      - Cancer core metabolism: examples/cancer-core-metabolism.md
+      - Microbial cross-feeding: examples/crossfeeding.md
+      - Metabolism-driven motility: examples/metabolic-driven-motility.md
+  - PhysiCell Studio: physicell-studio.md
+  - Extending:
+      - Add a metabolic model: extending/new-model.md
+      - Troubleshooting: extending/troubleshooting.md
+      - Performance and limitations: extending/performance-and-limitations.md
+  - Reference:
+      - Glossary: reference/glossary.md
+      - Citation: reference/citation.md
+      - Related resources: reference/resources.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+plugins:
+  - search
+
+extra_css:
+  - stylesheets/extra.css
+
+copyright: PhysiCelldFBA documentation

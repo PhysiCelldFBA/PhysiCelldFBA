@@ -66,3 +66,6 @@ output/cells.csv
 /test_voxel_values
 __pycache__/
 *.py[cod]
+
+# Local MkDocs build output
+/site/

@@ -1,0 +1,33 @@
+:root {
+  --physicelldfba-accent: #00897b;
+}
+
+.md-typeset .figure-placeholder {
+  align-items: center;
+  background:
+    linear-gradient(135deg, transparent 49.5%, rgba(0, 137, 123, 0.13) 50%, transparent 50.5%),
+    linear-gradient(45deg, transparent 49.5%, rgba(0, 137, 123, 0.13) 50%, transparent 50.5%);
+  border: 2px dashed var(--physicelldfba-accent);
+  border-radius: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 1.5rem auto;
+  min-height: 15rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.md-typeset .figure-placeholder strong {
+  color: var(--physicelldfba-accent);
+  font-size: 1.1rem;
+}
+
+.md-typeset .figure-placeholder code {
+  margin-top: 0.6rem;
+}
+
+.md-typeset .key-path {
+  border-left: 0.2rem solid var(--physicelldfba-accent);
+  padding-left: 0.8rem;
+}

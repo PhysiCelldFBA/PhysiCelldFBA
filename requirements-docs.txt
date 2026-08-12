@@ -1,0 +1,7 @@
+# Pin the complete rendering stack so `uv run --with-requirements` is
+# reproducible. Material 9.7.2 + PyMdown Extensions 10.21 + Pygments 2.20
+# crashes while highlighting XML fences (`filename=None`).
+mkdocs==1.6.1
+mkdocs-material==9.7.7
+pymdown-extensions==11.0.1
+pygments==2.20.0
