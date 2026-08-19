@@ -1,13 +1,27 @@
 """MultiCellDS I/O helpers for paper figure scripts.
 
 Requires pctk: pip install -e /path/to/pctk
+
+On the MN5 cluster pctk isn't pip-installed -- it's rsynced to
+<pDFBA>/python_libs/pctk and made importable via sys.path, the same
+convention used by analysis/_pctk_path.py elsewhere in this repo (no pip
+needed on the login/compute nodes). The path below is a no-op wherever pctk
+is already pip-installed (e.g. locally).
 """
 
 from __future__ import annotations
 
 import glob
 import os
+import sys
 import xml.etree.ElementTree as ET
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+# lib/ -> paper_figures/ -> scripts/ -> crossfeeding/ -> fba/ ->
+# sample_projects_intracellular/ -> <PhysiCelldFBA repo root> -> pDFBA/
+_python_libs = os.path.abspath(os.path.join(_HERE, *(['..'] * 7), 'python_libs'))
+if os.path.isdir(_python_libs) and _python_libs not in sys.path:
+    sys.path.insert(0, _python_libs)
 
 
 def require_pctk():
