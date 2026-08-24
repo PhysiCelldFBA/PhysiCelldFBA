@@ -724,117 +724,117 @@
             <exchange substrate="L-Arginine">
               <fba_flux>R_EX_arg_L_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="L-Asparagine">
               <fba_flux>R_EX_asn_L_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="L-Aspartate">
               <fba_flux>R_EX_asp_L_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="Choline">
               <fba_flux>R_EX_chol_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="CO2">
               <fba_flux>R_EX_co2_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="D-Glucose">
               <fba_flux>R_EX_glc_e</fba_flux>
               <Km units="mM">5.0</Km>
-              <Vmax units="mmol/g DW cell/min">1.0</Vmax>
+              <Vmax units="mmol/gDW cell/h">1.0</Vmax>
             </exchange>
             <exchange substrate="L-Glutamine">
               <fba_flux>R_EX_gln_L_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.1</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.1</Vmax>
             </exchange>
             <exchange substrate="L-Glutamate">
               <fba_flux>R_EX_glu_L_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="Glycine">
               <fba_flux>R_EX_gly_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="L-Isoleucine">
               <fba_flux>R_EX_ile_L_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="L-Lactate">
               <fba_flux>R_EX_lac_L_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="L-Leucine">
               <fba_flux>R_EX_leu_L_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="L-Lysine">
               <fba_flux>R_EX_lys_L_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="Ammonium">
               <fba_flux>R_EX_nh4_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="O2">
               <fba_flux>R_EX_o2_e</fba_flux>
               <Km units="mM">0.5</Km>
-              <Vmax units="mmol/g DW cell/min">1.0</Vmax>
+              <Vmax units="mmol/gDW cell/h">1.0</Vmax>
             </exchange>
             <exchange substrate="Ornithine">
               <fba_flux>R_EX_orn_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="L-Phenylalanine">
               <fba_flux>R_EX_phe_L_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="Phosphate">
               <fba_flux>R_EX_pi_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="L-Serine">
               <fba_flux>R_EX_ser_L_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="L-Threonine">
               <fba_flux>R_EX_thr_L_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="L-Tryptophan">
               <fba_flux>R_EX_trp_L_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="L-Tyrosine">
               <fba_flux>R_EX_tyr_L_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
             <exchange substrate="L-Valine">
               <fba_flux>R_EX_val_L_e</fba_flux>
               <Km units="mM">1.0</Km>
-              <Vmax units="mmol/g DW cell/min">0.02</Vmax>
+              <Vmax units="mmol/gDW cell/h">0.02</Vmax>
             </exchange>
           </transport_model>
           <growth_model>

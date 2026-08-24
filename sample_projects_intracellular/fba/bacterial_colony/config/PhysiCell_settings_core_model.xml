@@ -312,27 +312,27 @@
                         <exchange substrate="glucose">
                             <fba_flux>R_EX_glc__D_e</fba_flux>
                             <Km units="mM">0.01</Km>
-                            <Vmax units="mmol/pg DW cell/min">10.0</Vmax>
+                            <Vmax units="mmol/gDW cell/h">10.0</Vmax>
                         </exchange>
                         <exchange substrate="acetate">
                             <fba_flux>R_EX_ac_e</fba_flux>
                             <Km units="mM">0.01</Km>
-                            <Vmax units="mmol/pg DW cell/min">10.0</Vmax>
+                            <Vmax units="mmol/gDW cell/h">10.0</Vmax>
                         </exchange>
                         <exchange substrate="lactate">
                             <fba_flux>R_EX_lac__D_e</fba_flux>
                             <Km units="mM">0.01</Km>
-                            <Vmax units="mmol/pg DW cell/min">10.0</Vmax>
+                            <Vmax units="mmol/gDW cell/h">10.0</Vmax>
                         </exchange>
                         <exchange substrate="oxygen">
                             <fba_flux>R_EX_o2_e</fba_flux>
                             <Km units="mM">0.01</Km>
-                            <Vmax units="mmol/pg DW cell/min">25.0</Vmax>
+                            <Vmax units="mmol/gDW cell/h">25.0</Vmax>
                         </exchange>
                         <exchange substrate="CO2">
                             <fba_flux>R_EX_co2_e</fba_flux>
                             <Km units="mM">0.01</Km>
-                            <Vmax units="mmol/pg DW cell/min">10.0</Vmax>
+                            <Vmax units="mmol/gDW cell/h">10.0</Vmax>
                         </exchange>
                     </transport_model>
                     <growth_model>

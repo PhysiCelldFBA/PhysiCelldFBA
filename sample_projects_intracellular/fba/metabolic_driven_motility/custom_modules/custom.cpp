@@ -73,6 +73,15 @@
 #include <unordered_set>
 
 
+// Prefer per-cell custom_data trait; fall back to global user_parameter if unset/non-positive.
+static double cell_trait_or_param(Cell* pCell, const char* custom_key, const char* param_key)
+{
+    double val = pCell->custom_data[custom_key];
+    if (val > 0.0)
+        return val;
+    return parameters.doubles(param_key);
+}
+
 void custom_atp_optimization(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt)
 {
     auto* dfba =
@@ -81,14 +90,17 @@ void custom_atp_optimization(PhysiCell::Cell* pCell, PhysiCell::Phenotype& pheno
     // basal_atp_flux should match the SBML R_ATPM lower bound (8.39 for E. coli core).
     // Only ATP *above* this floor is "free" for motility; below it the FBA problem
     // becomes infeasible and the cell dies anyway.
-    static double basal_atp_flux       = parameters.doubles("basal_atp_flux");
+    static double basal_atp_flux = parameters.doubles("basal_atp_flux");
     // mmol ATP / gDW / h
-    static double vmax                 = parameters.doubles("ecoli_vmax");
-    // micron / min
-    static double motility_cost_at_vmax = parameters.doubles("motility_cost_at_vmax");
-    // mmol ATP / gDW / h — surplus above basal needed to reach vmax
-    static double phi_atp_hill         = parameters.doubles("phi_atp_hill");
+    static double phi_atp_hill = parameters.doubles("phi_atp_hill");
     // Hill exponent shaping ATP fraction to speed (1=linear, n>1=sigmoidal)
+
+    // Per-cell heterogeneity (sampled via initial_parameter_distributions on seekers).
+    double vmax = cell_trait_or_param(pCell, "ecoli_vmax", "ecoli_vmax");
+    // micron / min
+    double motility_cost_at_vmax =
+        cell_trait_or_param(pCell, "motility_cost_at_vmax", "motility_cost_at_vmax");
+    // mmol ATP / gDW / h — surplus above basal needed to reach vmax
 
     dFBASolution solution = dfba->optimize_for_objective("R_ATPM", 1.0);
 
@@ -155,14 +167,41 @@ void create_cell_types(void)
 	
 	setup_signal_behavior_dictionaries();
 
-	Cell_Definition* ecoli = find_cell_definition( "ecoli");
-	//  This sets the pre and post intracellular update functions
-	ecoli->functions.pre_update_intracellular =  NULL;
-	ecoli->functions.post_update_intracellular = post_update_intracellular;
-	ecoli->functions.custom_optimization = NULL; // dynamically set by metabolic_bound_migration_rule
-	ecoli->functions.update_phenotype = NULL;
-	ecoli->functions.volume_update_function = NULL;
-	ecoli->functions.custom_cell_rule = metabolic_bound_migration_rule;
+	// Legacy single-type motility configs still use name "ecoli".
+	Cell_Definition* ecoli = find_cell_definition("ecoli");
+	if (ecoli)
+	{
+		ecoli->functions.pre_update_intracellular = NULL;
+		ecoli->functions.post_update_intracellular = post_update_intracellular;
+		ecoli->functions.custom_optimization = NULL; // set by metabolic_bound_migration_rule
+		ecoli->functions.update_phenotype = NULL;
+		ecoli->functions.volume_update_function = NULL;
+		ecoli->functions.custom_cell_rule = metabolic_bound_migration_rule;
+	}
+
+	// Growers: biomass only — no motility phenotypic switch.
+	Cell_Definition* grower = find_cell_definition("ecoli_grower");
+	if (grower)
+	{
+		grower->functions.pre_update_intracellular = NULL;
+		grower->functions.post_update_intracellular = post_update_intracellular;
+		grower->functions.custom_optimization = NULL;
+		grower->functions.update_phenotype = NULL;
+		grower->functions.volume_update_function = NULL;
+		grower->functions.custom_cell_rule = NULL;
+	}
+
+	// Seekers: hysteretic biomass ↔ ATP/motility switch.
+	Cell_Definition* seeker = find_cell_definition("ecoli_seeker");
+	if (seeker)
+	{
+		seeker->functions.pre_update_intracellular = NULL;
+		seeker->functions.post_update_intracellular = post_update_intracellular;
+		seeker->functions.custom_optimization = NULL; // set by metabolic_bound_migration_rule
+		seeker->functions.update_phenotype = NULL;
+		seeker->functions.volume_update_function = NULL;
+		seeker->functions.custom_cell_rule = metabolic_bound_migration_rule;
+	}
 
 	display_cell_definitions(std::cout);
 
@@ -178,11 +217,11 @@ static int                     _src_glucose_idx  = -1;
 static std::vector<int>        _src_voxels;            // all active source voxel indices
 static std::unordered_set<int> _src_voxel_set;         // fast membership test for lambdas
 static double                  _src_glucose_conc = 0.0;
+static double                  _src_glucose_supply_rate = 0.0;
 
 // Register four glucose secretion nodes at fixed positions.
-// The supply rate and target concentration are both set to the initial
-// glucose concentration, so each source voxel is continuously driven
-// back to its starting level.
+// Target concentration (mM) and supply rate (1/min) are set separately so
+// patches can be held near target even when surrounded by uptake.
 // Call this from main.cpp AFTER setup_microenvironment().
 void setup_secretion_nodes( void )
 {
@@ -222,9 +261,14 @@ void setup_secretion_nodes( void )
 	}
 
 	_src_glucose_conc = parameters.doubles("glucose_source_concentration");
+	if (parameters.doubles.find_index("glucose_source_supply_rate") != -1)
+		_src_glucose_supply_rate = parameters.doubles("glucose_source_supply_rate");
+	else
+		_src_glucose_supply_rate = _src_glucose_conc;
 
 	std::cout << "[setup_secretion_nodes] glucose substrate index : " << _src_glucose_idx << std::endl;
 	std::cout << "[setup_secretion_nodes] source glucose conc     : " << _src_glucose_conc << " mM" << std::endl;
+	std::cout << "[setup_secretion_nodes] source supply rate      : " << _src_glucose_supply_rate << " 1/min" << std::endl;
 	std::cout << "[setup_secretion_nodes] source radius (layers)  : " << radius << std::endl;
 	std::cout << "[setup_secretion_nodes] total source voxels     : " << _src_voxels.size() << std::endl;
 	for( int k = 0; k < (int)_src_voxels.size(); k++ )
@@ -240,7 +284,7 @@ void setup_secretion_nodes( void )
 		Microenvironment*, int n, std::vector<double>* dest )
 	{
 		(*dest)[_src_glucose_idx] =
-			(_src_voxel_set.count(n) > 0) ? _src_glucose_conc : 0.0;
+			(_src_voxel_set.count(n) > 0) ? _src_glucose_supply_rate : 0.0;
 	};
 
 	microenvironment.bulk_supply_target_densities_function = [](
@@ -301,13 +345,59 @@ void setup_tissue(void)
 	
 	// load cells from your CSV file
 	load_cells_from_pugixml();
+
+	// Sample per-cell traits from <initial_parameter_distributions> (seekers).
+	set_parameters_from_distributions();
 	
 	return; 
 }
 
-void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt ){
+void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt )
+{
+#ifdef ADDON_PHYSIDFBA
+	// XML death_model may be enabled (core accumulates death_rate_increase while
+	// flag_for_death). Cap the resulting rates so phenotype_dt checks stay
+	// stochastic (UniformRandom) instead of mass-killing every starved cell at once.
+	auto* dfba = static_cast<PhysiCelldFBA::dFBAIntracellular*>(pCell->phenotype.intracellular);
+	if (dfba != nullptr && phenotype.death.dead == false)
+	{
+		static double metabolic_death_rate_cap = 0.05; // 1/min
+		static bool death_rate_loaded = false;
+		if (!death_rate_loaded)
+		{
+			if (parameters.doubles.find_index("metabolic_death_rate") >= 0)
+				metabolic_death_rate_cap = parameters.doubles("metabolic_death_rate");
+			death_rate_loaded = true;
+		}
 
-	
+		auto cap_rate = [&](int idx)
+		{
+			if (idx >= 0 && idx < (int)phenotype.death.rates.size()
+				&& phenotype.death.rates[idx] > metabolic_death_rate_cap)
+			{
+				phenotype.death.rates[idx] = metabolic_death_rate_cap;
+			}
+		};
+		cap_rate(phenotype.death.find_death_model_index(
+			PhysiCell_constants::apoptosis_death_model));
+		cap_rate(phenotype.death.find_death_model_index(
+			PhysiCell_constants::necrosis_death_model));
+
+		if (dfba->flag_for_death)
+		{
+			for (int i = 0; i < (int)phenotype.secretion.net_export_rates.size(); i++)
+				phenotype.secretion.net_export_rates[i] = 0.0;
+
+			pCell->custom_data["growth_rate"] = 0.0;
+			pCell->custom_data["oxygen_flux"] = 0.0;
+			pCell->custom_data["glucose_flux"] = 0.0;
+			pCell->custom_data["acetate_flux"] = 0.0;
+			pCell->custom_data["co2_flux"] = 0.0;
+			return;
+		}
+	}
+#endif
+
 	pCell->custom_data["growth_rate"] = pCell->phenotype.intracellular->get_growth_rate();
 	pCell->custom_data["oxygen_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_o2_e");
 	pCell->custom_data["glucose_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_glc__D_e");
@@ -333,8 +423,13 @@ void metabolic_bound_migration_rule(Cell* pCell, Phenotype& phenotype, double dt
     static int glucose_index = microenvironment.find_density_index("glucose");
     double glucose_conc = pCell->nearest_density_vector()[glucose_index];
 
-    static double glucose_threshold_low  = parameters.doubles("glucose_threshold_low");
-    static double glucose_threshold_high = parameters.doubles("glucose_threshold_high");
+    // Per-cell thresholds (heterogeneity via custom:* distributions); global fallback.
+    double glucose_threshold_low =
+        cell_trait_or_param(pCell, "glucose_threshold_low", "glucose_threshold_low");
+    double glucose_threshold_high =
+        cell_trait_or_param(pCell, "glucose_threshold_high", "glucose_threshold_high");
+    if (glucose_threshold_high < glucose_threshold_low)
+        std::swap(glucose_threshold_high, glucose_threshold_low);
 
     double mode = pCell->custom_data["metabolic_mode"];
     // 0 = biomass mode, 1 = ATP mode
@@ -357,8 +452,8 @@ void metabolic_bound_migration_rule(Cell* pCell, Phenotype& phenotype, double dt
         pCell->custom_data["motility_speed_fraction"] = 0.0;
         phenotype.motility.migration_speed = 0.0;
 
-        std::cout << "Cell " << pCell->ID
-                  << " switched to biomass optimization (growth mode)" << std::endl;
+        // Do not std::cout here: this rule runs under OpenMP and concurrent
+        // iostream use garbles logs and can destabilize large runs.
     }
 
     return;

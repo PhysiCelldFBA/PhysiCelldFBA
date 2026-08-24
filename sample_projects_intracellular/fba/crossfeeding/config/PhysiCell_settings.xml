@@ -382,37 +382,37 @@
                         <exchange substrate="glucose">
                             <fba_flux>R_EX_glc_D_e</fba_flux>
                             <Km units="mM">1</Km>
-                            <Vmax units="mmol/g DW cell/h">7.5</Vmax>
+                            <Vmax units="mmol/gDW cell/h">7.5</Vmax>
                         </exchange>
                         <exchange substrate="H2"> <!-- H2 is a product -->
                             <fba_flux>R_EX_h2_e</fba_flux>
                             <Km units="mM">0.1</Km>
-                            <Vmax units="mmol/g DW cell/h">0.0</Vmax>
+                            <Vmax units="mmol/gDW cell/h">0.0</Vmax>
                         </exchange>
                         <exchange substrate="NH4">
                             <fba_flux>R_EX_nh4_e</fba_flux>
                             <Km units="mM">0.001</Km>
-                            <Vmax units="mmol/g DW cell/h">15.0</Vmax>
+                            <Vmax units="mmol/gDW cell/h">15.0</Vmax>
                         </exchange>
                         <exchange substrate="Pi">
                             <fba_flux>R_EX_pi_e</fba_flux>
                             <Km units="mM">0.001</Km>
-                            <Vmax units="mmol/g DW cell/h">15.0</Vmax>
+                            <Vmax units="mmol/gDW cell/h">15.0</Vmax>
                         </exchange>
                         <exchange substrate="SO4">
                             <fba_flux>R_EX_so4_e</fba_flux>
                             <Km units="mM">0.001</Km>
-                            <Vmax units="mmol/g DW cell/h">15.0</Vmax>
+                            <Vmax units="mmol/gDW cell/h">15.0</Vmax>
                         </exchange>
                         <exchange substrate="acetate"> <!-- acetate is a product, no Vmax needed -->
                             <fba_flux>R_EX_ac_e</fba_flux>
                             <Km units="mM">0.1</Km>
-                            <Vmax units="mmol/g DW cell/h">0.0</Vmax>
+                            <Vmax units="mmol/gDW cell/h">0.0</Vmax>
                         </exchange>
                         <exchange substrate="CO2"> <!-- co2 is a product, no Vmax needed -->
                             <fba_flux>R_EX_co2_e</fba_flux>
                             <Km units="mM">0.1</Km>
-                            <Vmax units="mmol/g DW cell/h">0.0</Vmax>
+                            <Vmax units="mmol/gDW cell/h">0.0</Vmax>
                         </exchange>                        
                     </transport_model>
                     <growth_model>
@@ -639,33 +639,33 @@
                         <exchange substrate="CO2">
                             <fba_flux>R_EX_co2_e</fba_flux>
                             <Km units="mM">0.0001</Km>
-                            <Vmax units="mmol/g DW cell/h">100.0</Vmax>
+                            <Vmax units="mmol/gDW cell/h">100.0</Vmax>
                         </exchange>
                         <exchange substrate="H2">
                             <fba_flux>R_EX_h2_e</fba_flux>
                             <!-- exp4: raised from 0.0001 (near-saturated at all [H2]) to soften uptake coupling -->
                             <Km units="mM">0.05</Km>
-                            <Vmax units="mmol/g DW cell/h">20.0</Vmax>
+                            <Vmax units="mmol/gDW cell/h">20.0</Vmax>
                         </exchange>
                         <exchange substrate="methane">
                             <fba_flux>R_EX_ch4_e</fba_flux>
                             <Km units="mM">0.0001</Km>
-                            <Vmax units="mmol/g DW cell/h">0.0</Vmax>
+                            <Vmax units="mmol/gDW cell/h">0.0</Vmax>
                         </exchange>
                         <exchange substrate="NH4">
                             <fba_flux>R_EX_nh4_e</fba_flux>
                             <Km units="mM">0.0001</Km>
-                            <Vmax units="mmol/g DW cell/h">10.0</Vmax>
+                            <Vmax units="mmol/gDW cell/h">10.0</Vmax>
                         </exchange>
                         <exchange substrate="Pi">
                             <fba_flux>R_EX_pi_e</fba_flux>
                             <Km units="mM">0.0001</Km>
-                            <Vmax units="mmol/g DW cell/h">10</Vmax>
+                            <Vmax units="mmol/gDW cell/h">10</Vmax>
                         </exchange>
                         <exchange substrate="acetate">
                             <fba_flux>R_EX_ac_e</fba_flux>
                             <Km units="mM">0.0001</Km>
-                            <Vmax units="mmol/g DW cell/h">3.0</Vmax>
+                            <Vmax units="mmol/gDW cell/h">3.0</Vmax>
                         </exchange>
                     </transport_model>
                     <growth_model>
