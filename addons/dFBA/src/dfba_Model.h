@@ -22,6 +22,8 @@
 
 #include "dfba_Metabolite.h"
 #include "dfba_Solution.h"
+#include "dfba_Gene.h"
+#include "dfba_GPR.h"
 
 LIBSBML_CPP_NAMESPACE_USE
 
@@ -45,6 +47,23 @@ class dFBAModel
 
 		/** \brief map between metabolites' ids and metabolites' references **/
 		std::map<std::string, int> metaboliteIndexer;
+
+		/** \brief vector of gene objects, parsed from fbc:listOfGeneProducts */
+		std::vector<dFBAGene*> genes;
+
+		/** \brief map between genes' ids and their index in genes */
+		std::map<std::string, int> geneIndexer;
+
+		/**
+		 * \brief for each gene index, the indices of the reactions whose GPR
+		 * references it.
+		 *
+		 * Built once after parsing and immutable thereafter. A knockout only has
+		 * to re-evaluate this subset instead of sweeping every reaction, which
+		 * matters for genome-scale models: a typical iML1515 gene appears in a
+		 * handful of the 2712 reactions.
+		 */
+		std::vector< std::vector<int> > geneToReactions;
 
 		/** \brief vector of reaction objects*/
 		std::vector<dFBAReaction*> reactions;
@@ -101,6 +120,66 @@ class dFBAModel
 		/** \brief Add new reaction to the model*/
 		void addReaction(dFBAReaction* rxn);
 
+		// ================ genes and GPR rules ================
+
+		/** \brief Check if there is a gene with a given ID*/
+		bool hasGene(const std::string& gId) const;
+
+		/** \brief Get a gene pointer using a string ID, nullptr when absent*/
+		dFBAGene* getGene(const std::string& gId) const;
+
+		/** \brief Add a new gene to the model, returning its index*/
+		int addGene(const std::string& gId);
+
+		/** \brief Get the integer index of a gene, -1 when absent*/
+		int getGeneIndex(const std::string& gId) const;
+
+		/** \brief Get the number of model genes*/
+		const int getNumGenes();
+
+		/** \brief Get the list of gene pointers*/
+		const std::vector<dFBAGene*> getListOfGenes() const;
+
+		/** \brief Render a reaction's GPR rule as an infix string*/
+		std::string getGeneReactionRule(const std::string& rId);
+
+		/** \brief Indices of the reactions whose GPR references a given gene*/
+		const std::vector<int>& getReactionsOfGene(int gene_index) const;
+
+		/**
+		 * \brief Knock out a gene and disable the reactions that this makes
+		 * unavailable.
+		 *
+		 * Sets the gene inactive, then re-evaluates the GPR of every reaction
+		 * that references it. A reaction whose rule now evaluates false has its
+		 * current bounds saved and is clamped to [0, 0]. Returns the number of
+		 * reactions disabled by this call. A no-op if the gene is unknown or
+		 * already inactive.
+		 */
+		int knockOutGene(const std::string& gId);
+
+		/**
+		 * \brief Reactivate a gene and re-enable the reactions that this makes
+		 * available again.
+		 *
+		 * Re-evaluates rather than blindly restoring: a reaction requiring
+		 * "G_a and G_b" stays disabled when only one of the two is restored.
+		 * Returns the number of reactions re-enabled.
+		 */
+		int restoreGene(const std::string& gId);
+
+		/** \brief Set a gene active or inactive, applying the consequences*/
+		int setGeneActive(const std::string& gId, bool active);
+
+		/** \brief True when the gene exists and has not been knocked out*/
+		bool isGeneActive(const std::string& gId) const;
+
+		/** \brief Ids of every gene currently knocked out*/
+		std::vector<std::string> getKnockedOutGenes() const;
+
+		/** \brief Ids of every reaction currently disabled by a knockout*/
+		std::vector<std::string> getKnockedOutReactions() const;
+
 		/** \brief Get the integer index of a reaction*/
 		const int getReactionIndex(std::string rId);
 		
@@ -139,6 +218,9 @@ class dFBAModel
 
 		/** \brief Parse and read a metabolic model from a SBML file*/
 		void readSBMLModel(const char* sbmlFileName);
+
+		/** \brief Build geneToReactions from the parsed GPR rules*/
+		void buildGeneReactionIndex();
 		
 		/** \brief Initialize the ClpSimplex model */
 		void initProblem();
@@ -172,6 +254,17 @@ class dFBAModel
 		// Save/restore objective function state
 		void saveObjectiveState();
 		void restoreObjectiveState();
+
+	private:
+		/**
+		 * \brief Re-evaluate one reaction's GPR and apply the result to its bounds.
+		 *
+		 * Returns true when the reaction's enabled/disabled state changed.
+		 */
+		bool applyGeneStateToReaction(int reaction_index);
+
+		/** \brief Recursively translate an fbc association into GPR nodes*/
+		int parseGPRAssociation(const FbcAssociation* association, dFBAGPR& gpr);
 };
 
 #endif

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbml xmlns="http://www.sbml.org/sbml/level3/version1/core"
+      xmlns:fbc="http://www.sbml.org/sbml/level3/version1/fbc/version2"
+      level="3" version="1" fbc:required="false">
+  <model id="single_child_and" fbc:strict="true">
+    <listOfCompartments>
+      <compartment id="c" constant="true"/>
+    </listOfCompartments>
+    <listOfParameters>
+      <parameter id="LB" value="-1000" constant="true"/>
+      <parameter id="UB" value="1000" constant="true"/>
+      <parameter id="ZERO" value="0" constant="true"/>
+    </listOfParameters>
+    <listOfSpecies>
+      <species id="M_a_c" compartment="c" hasOnlySubstanceUnits="false"
+               boundaryCondition="false" constant="false" fbc:charge="0"/>
+      <species id="M_b_c" compartment="c" hasOnlySubstanceUnits="false"
+               boundaryCondition="false" constant="false" fbc:charge="0"/>
+    </listOfSpecies>
+    <listOfReactions>
+      <reaction id="R_COLLAPSE" reversible="false" fast="false"
+                fbc:lowerFluxBound="ZERO" fbc:upperFluxBound="UB">
+        <listOfReactants>
+          <speciesReference species="M_a_c" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="M_b_c" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <fbc:geneProductAssociation>
+          <fbc:and>
+            <fbc:geneProductRef fbc:geneProduct="G_a"/>
+          </fbc:and>
+        </fbc:geneProductAssociation>
+      </reaction>
+    </listOfReactions>
+    <fbc:listOfObjectives fbc:activeObjective="obj">
+      <fbc:objective fbc:id="obj" fbc:type="maximize">
+        <fbc:listOfFluxObjectives>
+          <fbc:fluxObjective fbc:reaction="R_COLLAPSE" fbc:coefficient="1"/>
+        </fbc:listOfFluxObjectives>
+      </fbc:objective>
+    </fbc:listOfObjectives>
+    <fbc:listOfGeneProducts>
+      <fbc:geneProduct fbc:id="G_a" fbc:name="a" fbc:label="G_a"/>
+    </fbc:listOfGeneProducts>
+  </model>
+</sbml>

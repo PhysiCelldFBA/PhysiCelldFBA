@@ -75,7 +75,7 @@ PhysiCell_pugixml.o PhysiCell_settings.o PhysiCell_geometry.o
 
 libFBA := ./addons/dFBA/ext/coin-or/include/coin/CoinPackedMatrix.hpp
 
-PhysiCelldFBA_OBJECTS := dfba_Metabolite.o dfba_Reaction.o dfba_Solution.o dfba_Model.o dfba_intracellular.o
+PhysiCelldFBA_OBJECTS := dfba_Metabolite.o dfba_Reaction.o dfba_Solution.o dfba_Model.o dfba_Gene.o dfba_GPR.o dfba_intracellular.o
 
 PhysiCell_custom_module_OBJECTS := custom.o
 
@@ -84,7 +84,7 @@ pugixml_OBJECTS := pugixml.o
 PhysiCell_OBJECTS := $(BioFVM_OBJECTS)  $(pugixml_OBJECTS) $(PhysiCell_core_OBJECTS) $(PhysiCell_module_OBJECTS)
 ALL_OBJECTS := $(PhysiCell_OBJECTS) $(PhysiCell_custom_module_OBJECTS) $(PhysiCelldFBA_OBJECTS) 
 
-SOME_OBJECTS := dfba_Metabolite.o dfba_Reaction.o dfba_Solution.o dfba_Model.o
+SOME_OBJECTS := dfba_Metabolite.o dfba_Reaction.o dfba_Solution.o dfba_Model.o dfba_Gene.o dfba_GPR.o
 
 # compile the project
 
@@ -209,6 +209,12 @@ dfba_Metabolite.o: addons/dFBA/src/dfba_Metabolite.cpp $(libFBA)
 
 dfba_Solution.o: addons/dFBA/src/dfba_Solution.cpp $(libFBA)
 	$(COMPILE_COMMAND) $(INC) -c addons/dFBA/src/dfba_Solution.cpp 
+
+dfba_Gene.o: addons/dFBA/src/dfba_Gene.cpp $(libFBA)
+	$(COMPILE_COMMAND) $(INC) -c addons/dFBA/src/dfba_Gene.cpp
+
+dfba_GPR.o: addons/dFBA/src/dfba_GPR.cpp $(libFBA)
+	$(COMPILE_COMMAND) $(INC) -c addons/dFBA/src/dfba_GPR.cpp
 
 # user-defined PhysiCell modules
 custom.o: ./custom_modules/custom.cpp

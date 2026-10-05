@@ -53,15 +53,15 @@ vpath %.cpp   $(SRC_DIR)
 vpath %.h     $(SRC_DIR)
 
 # Objects from ../src
-ALL_OBJECTS := dfba_Metabolite.o dfba_Reaction.o dfba_Solution.o dfba_Model.o
+ALL_OBJECTS := dfba_Metabolite.o dfba_Reaction.o dfba_Solution.o dfba_Model.o dfba_Gene.o dfba_GPR.o
 
 # Use a concrete header as the sentinel that setup_fba.py produced deps
 LIBFBA_SENTINEL := $(DEPS_DIR)/coin-or/include/coin/CoinPackedMatrix.hpp
 
-.PHONY: all make_lib clean libFBA test_sbml test_clp test_fba
+.PHONY: all make_lib clean libFBA test_sbml test_clp test_fba test_gpr
 
 make_lib: libFBA $(ALL_OBJECTS)
-all: make_lib test_sbml test_clp test_fba
+all: make_lib test_sbml test_clp test_fba test_gpr
 
 # --- Tests (link stage) ---
 test_sbml: $(LIBFBA_SENTINEL) $(ALL_OBJECTS) ./main_test_sbml.cpp
@@ -78,6 +78,15 @@ test_fba: $(LIBFBA_SENTINEL) $(ALL_OBJECTS) ./main_test_fba.cpp
 	$(COMPILE_COMMAND) -o $@ $(ALL_OBJECTS) main_test_fba.cpp $(LD_PATH) $(WIN_LD_FLAG) $(RPATH) $(LIBS)
 	@echo created $@
 	@echo
+
+test_gpr: $(LIBFBA_SENTINEL) $(ALL_OBJECTS) ./main_test_gpr.cpp ./dfba_test.h
+	$(COMPILE_COMMAND) -o $@ $(ALL_OBJECTS) main_test_gpr.cpp $(LD_PATH) $(WIN_LD_FLAG) $(RPATH) $(LIBS)
+	@echo created $@
+	@echo
+
+# Run the assertion-based tests; non-zero exit on failure
+check: test_gpr
+	./test_gpr data/Ecoli_core.xml
 
 # --- Build dependencies once (creates headers and libs under ../ext) ---
 libFBA: $(LIBFBA_SENTINEL)
@@ -100,6 +109,12 @@ dfba_Metabolite.o: ../src/dfba_Metabolite.cpp
 	$(COMPILE_COMMAND) -c $< -o $@
 
 dfba_Solution.o: ../src/dfba_Solution.cpp
+	$(COMPILE_COMMAND) -c $< -o $@
+
+dfba_Gene.o: ../src/dfba_Gene.cpp
+	$(COMPILE_COMMAND) -c $< -o $@
+
+dfba_GPR.o: ../src/dfba_GPR.cpp
 	$(COMPILE_COMMAND) -c $< -o $@
 
 clean:

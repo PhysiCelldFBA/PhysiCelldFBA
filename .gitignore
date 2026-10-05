@@ -66,3 +66,10 @@ output/cells.csv
 /test_voxel_values
 __pycache__/
 *.py[cod]
+
+# dFBA standalone test binaries
+addons/dFBA/test/test_sbml
+addons/dFBA/test/test_clp
+addons/dFBA/test/test_fba
+addons/dFBA/test/test_gpr
+addons/dFBA/test/*.o

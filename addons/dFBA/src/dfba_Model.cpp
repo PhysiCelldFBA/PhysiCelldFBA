@@ -27,6 +27,9 @@ dFBAModel::~dFBAModel() {
     for(dFBAMetabolite* met: this->metabolites)
         delete met;
 
+    for(dFBAGene* gene: this->genes)
+        delete gene;
+
     if (this->handler != nullptr)
         delete handler;
 }
@@ -46,9 +49,16 @@ dFBAModel::dFBAModel(const dFBAModel& copy) {
         this->reactions.push_back(new dFBAReaction(*original_reaction));
     }
 
+    // Deep copy genes, so a knockout in one cell never reaches another
+    for (auto original_gene : copy.genes) {
+        this->genes.push_back(new dFBAGene(*original_gene));
+    }
+
     // Copy maps
     this->metaboliteIndexer = copy.metaboliteIndexer;
     this->reactionsIndexer = copy.reactionsIndexer;
+    this->geneIndexer = copy.geneIndexer;
+    this->geneToReactions = copy.geneToReactions;
 
     // Copy solution (assuming it can be copied by value)
     this->solution = copy.solution;
@@ -84,6 +94,11 @@ dFBAModel& dFBAModel::operator=(const dFBAModel& other) {
     }
     reactions.clear();
 
+    for (auto gene : genes) {
+        delete gene;
+    }
+    genes.clear();
+
     if (handler != nullptr) {
         delete handler;
     }
@@ -102,9 +117,16 @@ dFBAModel& dFBAModel::operator=(const dFBAModel& other) {
         this->reactions.push_back(new dFBAReaction(*original_reaction));
     }
 
+    // Deep copy genes, so a knockout in one cell never reaches another
+    for (auto original_gene : other.genes) {
+        this->genes.push_back(new dFBAGene(*original_gene));
+    }
+
     // Copy other maps
     this->metaboliteIndexer = other.metaboliteIndexer;
     this->reactionsIndexer = other.reactionsIndexer;
+    this->geneIndexer = other.geneIndexer;
+    this->geneToReactions = other.geneToReactions;
 
     // Copy solution (assuming it can be copied by value)
     this->solution = other.solution;
@@ -133,8 +155,11 @@ void dFBAModel::clear(){
     this->is_initialized = false;
     this->reactions.clear();
     this->metabolites.clear();
+    this->genes.clear();
     this->reactionsIndexer.clear();
     this->metaboliteIndexer.clear();
+    this->geneIndexer.clear();
+    this->geneToReactions.clear();
     this->solution.clear();
     this->problem = ClpSimplex();
     this->handler = NULL;
@@ -230,9 +255,19 @@ void dFBAModel::setReactionUpperBound(std::string rId, double upperBound)
     dFBAReaction* rxn = this->getReaction(rId);
     if (rxn)
     {
+        // A knocked-out reaction must stay clamped at zero: remember the new
+        // bound for when the responsible gene is restored, but leave the LP shut.
+        if (rxn->isKnockedOut())
+        {
+            rxn->setKnockoutSavedUpperBound(upperBound);
+            return;
+        }
         rxn->setUpperBound(upperBound);
-        int colIdx = this->reactionsIndexer[rId];
-        this->problem.setColumnUpper(colIdx, upperBound);
+        if (this->is_initialized)
+        {
+            int colIdx = this->reactionsIndexer[rId];
+            this->problem.setColumnUpper(colIdx, upperBound);
+        }
     }
     else{
         std::cerr << "Reaction with ID " << rId << " not found in the model." << std::endl;
@@ -255,9 +290,19 @@ void dFBAModel::setReactionLowerBound(std::string rId, double lowerBound)
     dFBAReaction* rxn = this->getReaction(rId);
     if (rxn)
     {
+        // A knocked-out reaction must stay clamped at zero: remember the new
+        // bound for when the responsible gene is restored, but leave the LP shut.
+        if (rxn->isKnockedOut())
+        {
+            rxn->setKnockoutSavedLowerBound(lowerBound);
+            return;
+        }
         rxn->setLowerBound(lowerBound);
-        int colIdx = this->reactionsIndexer[rId];
-        this->problem.setColumnLower(colIdx, lowerBound);
+        if (this->is_initialized)
+        {
+            int colIdx = this->reactionsIndexer[rId];
+            this->problem.setColumnLower(colIdx, lowerBound);
+        }
     }
     else{
         std::cerr << "Reaction with ID " << rId << " not found in the model." << std::endl;
@@ -451,12 +496,69 @@ void dFBAModel::readSBMLModel(const char* sbmlFileName)
         this->addReaction(reaction);
     }
 
+    // Parse the gene products and the gene-protein-reaction rules. Genes come
+    // from fbc:listOfGeneProducts; each reaction's rule comes from its
+    // fbc:geneProductAssociation. Reactions without an association keep an empty
+    // GPR and are therefore never disabled by a knockout.
+    FbcModelPlugin* gene_plugin = static_cast<FbcModelPlugin*>(model->getPlugin("fbc"));
+    if (gene_plugin)
+    {
+        for (unsigned int i = 0; i < gene_plugin->getNumGeneProducts(); i++)
+        {
+            GeneProduct* gene_product = gene_plugin->getGeneProduct(i);
+            if (gene_product == nullptr)
+                continue;
+
+            int gene_index = this->addGene(gene_product->getId());
+            if (gene_index >= 0)
+            {
+                this->genes[gene_index]->setName(gene_product->getName());
+                this->genes[gene_index]->setLabel(gene_product->getLabel());
+            }
+        }
+
+        for (unsigned int i = 0; i < model->getNumReactions(); i++)
+        {
+            Reaction* sbml_reaction = listOfReactions->get(i);
+            dFBAReaction* reaction = this->getReaction(sbml_reaction->getId());
+            if (reaction == nullptr)
+                continue;
+
+            FbcReactionPlugin* rxnFbc =
+                static_cast<FbcReactionPlugin*>(sbml_reaction->getPlugin("fbc"));
+            if (rxnFbc == nullptr || !rxnFbc->isSetGeneProductAssociation())
+                continue;
+
+            GeneProductAssociation* gpa = rxnFbc->getGeneProductAssociation();
+            if (gpa == nullptr || gpa->getAssociation() == nullptr)
+                continue;
+
+            dFBAGPR gpr;
+            int root = this->parseGPRAssociation(gpa->getAssociation(), gpr);
+            if (root >= 0)
+            {
+                gpr.setRoot(root);
+                reaction->setGPR(gpr);
+            }
+        }
+    }
+
+    this->buildGeneReactionIndex();
+
     // The following code is intended to extract the objective function from the sbml using
     // the FbcdFBAModelPlugin; then the coefficients are assigned to the corresponding dFBAReactions
     FbcModelPlugin* mplugin = static_cast<FbcModelPlugin*>(model->getPlugin("fbc"));
     if (mplugin) {
         ListOfObjectives* listOfObjectives = mplugin->getListOfObjectives();
-        Objective* objective = mplugin->getObjective(listOfObjectives->getActiveObjective());
+        Objective* objective = (listOfObjectives != nullptr)
+            ? mplugin->getObjective(listOfObjectives->getActiveObjective())
+            : nullptr;
+        if (objective == nullptr) {
+            std::cerr << "WARNING: no active fbc objective in " << sbmlFileName
+                      << "; all objective coefficients left at zero." << std::endl;
+            delete document;
+            return;
+        }
         ListOfFluxObjectives* listOfFluxObjectives = objective->getListOfFluxObjectives();
 
         for (unsigned int i = 0; i < listOfFluxObjectives->getNumFluxObjectives(); i++)
@@ -695,6 +797,8 @@ void dFBAModel::deepCopy(const dFBAModel& source) {
     metabolites.clear();
     for (auto rxn : reactions) delete rxn;
     reactions.clear();
+    for (auto gene : genes) delete gene;
+    genes.clear();
     if (handler != nullptr) { delete handler; handler = nullptr; }
 
     // Copy primitive members
@@ -709,9 +813,15 @@ void dFBAModel::deepCopy(const dFBAModel& source) {
     for (auto original_reaction : source.reactions)
         reactions.push_back(new dFBAReaction(*original_reaction));
 
+    // Deep copy genes, so a knockout in one cell never reaches another
+    for (auto original_gene : source.genes)
+        genes.push_back(new dFBAGene(*original_gene));
+
     // Copy indexers and solution
     metaboliteIndexer = source.metaboliteIndexer;
     reactionsIndexer = source.reactionsIndexer;
+    geneIndexer = source.geneIndexer;
+    geneToReactions = source.geneToReactions;
     solution = source.solution;
 
     // Copy saved objective state
@@ -741,4 +851,266 @@ void dFBAModel::restoreObjectiveState() {
     for (const auto& pair : original_objective_coefficients) {
         setObjectiveCoefficient(pair.first, pair.second);
     }
+}
+
+// =====================================================================
+//  Genes, GPR rules and gene knockouts
+// =====================================================================
+
+bool dFBAModel::hasGene(const std::string& gId) const
+{
+    return this->geneIndexer.find(gId) != this->geneIndexer.end();
+}
+
+int dFBAModel::getGeneIndex(const std::string& gId) const
+{
+    std::map<std::string, int>::const_iterator it = this->geneIndexer.find(gId);
+    if (it == this->geneIndexer.end())
+        return -1;
+    return it->second;
+}
+
+dFBAGene* dFBAModel::getGene(const std::string& gId) const
+{
+    int index = this->getGeneIndex(gId);
+    if (index < 0)
+        return nullptr;
+    return this->genes[index];
+}
+
+int dFBAModel::addGene(const std::string& gId)
+{
+    int existing = this->getGeneIndex(gId);
+    if (existing >= 0)
+        return existing;
+
+    dFBAGene* gene = new dFBAGene(gId);
+    this->genes.push_back(gene);
+    int index = (int)this->genes.size() - 1;
+    this->geneIndexer[gId] = index;
+    return index;
+}
+
+const int dFBAModel::getNumGenes()
+{
+    return (int)this->genes.size();
+}
+
+const std::vector<dFBAGene*> dFBAModel::getListOfGenes() const
+{
+    return this->genes;
+}
+
+std::string dFBAModel::getGeneReactionRule(const std::string& rId)
+{
+    dFBAReaction* rxn = this->getReaction(rId);
+    if (rxn == nullptr)
+        return "";
+    return rxn->getGPR().toString(this->genes);
+}
+
+const std::vector<int>& dFBAModel::getReactionsOfGene(int gene_index) const
+{
+    static const std::vector<int> empty;
+    if (gene_index < 0 || gene_index >= (int)this->geneToReactions.size())
+        return empty;
+    return this->geneToReactions[gene_index];
+}
+
+int dFBAModel::parseGPRAssociation(const FbcAssociation* association, dFBAGPR& gpr)
+{
+    if (association == nullptr)
+        return -1;
+
+    const int type_code = association->getTypeCode();
+
+    if (type_code == SBML_FBC_GENEPRODUCTREF)
+    {
+        const GeneProductRef* ref = static_cast<const GeneProductRef*>(association);
+        const std::string gene_id = ref->getGeneProduct();
+
+        // A rule may reference a gene product that is missing from
+        // listOfGeneProducts. Register it so the rule stays faithful to the file
+        // rather than silently dropping a term.
+        int gene_index = this->getGeneIndex(gene_id);
+        if (gene_index < 0)
+            gene_index = this->addGene(gene_id);
+
+        return gpr.addGeneNode(gene_index);
+    }
+
+    if (type_code == SBML_FBC_AND || type_code == SBML_FBC_OR)
+    {
+        unsigned int num_children = 0;
+        if (type_code == SBML_FBC_AND)
+            num_children = static_cast<const FbcAnd*>(association)->getNumAssociations();
+        else
+            num_children = static_cast<const FbcOr*>(association)->getNumAssociations();
+
+        std::vector<int> children;
+        for (unsigned int i = 0; i < num_children; i++)
+        {
+            const FbcAssociation* child = nullptr;
+            if (type_code == SBML_FBC_AND)
+                child = static_cast<const FbcAnd*>(association)->getAssociation(i);
+            else
+                child = static_cast<const FbcOr*>(association)->getAssociation(i);
+
+            int child_index = this->parseGPRAssociation(child, gpr);
+            if (child_index >= 0)
+                children.push_back(child_index);
+        }
+
+        if (children.empty())
+            return -1;
+
+        // An AND/OR with a single child is just that child.
+        if (children.size() == 1)
+            return children[0];
+
+        const GPRNode::NodeType node_type =
+            (type_code == SBML_FBC_AND) ? GPRNode::AND : GPRNode::OR;
+        return gpr.addLogicalNode(node_type, children);
+    }
+
+    return -1;
+}
+
+void dFBAModel::buildGeneReactionIndex()
+{
+    this->geneToReactions.clear();
+    this->geneToReactions.resize(this->genes.size());
+
+    for (unsigned int r = 0; r < this->reactions.size(); r++)
+    {
+        dFBAReaction* rxn = this->reactions[r];
+        if (!rxn->hasGPR())
+            continue;
+
+        std::vector<int> gene_indices = rxn->getGPR().getGeneIndices();
+        for (unsigned int i = 0; i < gene_indices.size(); i++)
+        {
+            const int g = gene_indices[i];
+            if (g >= 0 && g < (int)this->geneToReactions.size())
+                this->geneToReactions[g].push_back((int)r);
+        }
+    }
+}
+
+bool dFBAModel::applyGeneStateToReaction(int reaction_index)
+{
+    if (reaction_index < 0 || reaction_index >= (int)this->reactions.size())
+        return false;
+
+    dFBAReaction* rxn = this->reactions[reaction_index];
+
+    // Without a GPR the reaction is not under genetic control.
+    if (!rxn->hasGPR())
+        return false;
+
+    const bool available = rxn->getGPR().eval(this->genes);
+
+    // The bounds are applied directly here rather than through
+    // setReactionLowerBound/setReactionUpperBound, because those deliberately
+    // refuse to move the bounds of a reaction that is currently knocked out.
+    const int colIdx = this->reactionsIndexer[rxn->getId()];
+
+    if (!available && !rxn->isKnockedOut())
+    {
+        // Save the bounds the reaction currently holds, then clamp it shut.
+        rxn->saveBoundsForKnockout();
+        rxn->setKnockedOut(true);
+        rxn->setLowerBound(0.0);
+        rxn->setUpperBound(0.0);
+        if (this->is_initialized)
+        {
+            this->problem.setColumnLower(colIdx, 0.0);
+            this->problem.setColumnUpper(colIdx, 0.0);
+        }
+        return true;
+    }
+
+    if (available && rxn->isKnockedOut())
+    {
+        const double lb = rxn->getKnockoutSavedLowerBound();
+        const double ub = rxn->getKnockoutSavedUpperBound();
+        rxn->setKnockedOut(false);
+        rxn->setLowerBound(lb);
+        rxn->setUpperBound(ub);
+        if (this->is_initialized)
+        {
+            this->problem.setColumnLower(colIdx, lb);
+            this->problem.setColumnUpper(colIdx, ub);
+        }
+        return true;
+    }
+
+    return false;
+}
+
+int dFBAModel::setGeneActive(const std::string& gId, bool active)
+{
+    const int gene_index = this->getGeneIndex(gId);
+    if (gene_index < 0)
+    {
+        std::cerr << "Gene with ID " << gId << " not found in the model." << std::endl;
+        return 0;
+    }
+
+    dFBAGene* gene = this->genes[gene_index];
+    if (gene->isActive() == active)
+        return 0;
+
+    gene->setActive(active);
+
+    // Only the reactions that reference this gene can have changed.
+    const std::vector<int>& affected = this->getReactionsOfGene(gene_index);
+    int changed = 0;
+    for (unsigned int i = 0; i < affected.size(); i++)
+    {
+        if (this->applyGeneStateToReaction(affected[i]))
+            changed++;
+    }
+
+    return changed;
+}
+
+int dFBAModel::knockOutGene(const std::string& gId)
+{
+    return this->setGeneActive(gId, false);
+}
+
+int dFBAModel::restoreGene(const std::string& gId)
+{
+    return this->setGeneActive(gId, true);
+}
+
+bool dFBAModel::isGeneActive(const std::string& gId) const
+{
+    dFBAGene* gene = this->getGene(gId);
+    if (gene == nullptr)
+        return false;
+    return gene->isActive();
+}
+
+std::vector<std::string> dFBAModel::getKnockedOutGenes() const
+{
+    std::vector<std::string> out;
+    for (unsigned int i = 0; i < this->genes.size(); i++)
+    {
+        if (!this->genes[i]->isActive())
+            out.push_back(this->genes[i]->getId());
+    }
+    return out;
+}
+
+std::vector<std::string> dFBAModel::getKnockedOutReactions() const
+{
+    std::vector<std::string> out;
+    for (unsigned int i = 0; i < this->reactions.size(); i++)
+    {
+        if (this->reactions[i]->isKnockedOut())
+            out.push_back(this->reactions[i]->getId());
+    }
+    return out;
 }

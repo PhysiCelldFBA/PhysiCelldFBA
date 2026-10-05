@@ -16,6 +16,9 @@ dFBAReaction::dFBAReaction(std::string id)
     this->upperBound = 1000;
     this->objectiveCoefficient = 0;
     this->fluxValue = 0;
+    this->knockedOut = false;
+    this->knockoutSavedLowerBound = 0;
+    this->knockoutSavedUpperBound = 0;
 }
 
 dFBAReaction::~dFBAReaction() {
@@ -32,6 +35,12 @@ dFBAReaction::dFBAReaction(const dFBAReaction& copy) {
     this->objectiveCoefficient = copy.objectiveCoefficient;
     this->fluxValue = copy.fluxValue;
     this->metabolites = copy.metabolites;
+    // dFBAGPR holds a flat vector of indices, so value assignment is a complete
+    // copy: two reactions never share GPR state.
+    this->gpr = copy.gpr;
+    this->knockedOut = copy.knockedOut;
+    this->knockoutSavedLowerBound = copy.knockoutSavedLowerBound;
+    this->knockoutSavedUpperBound = copy.knockoutSavedUpperBound;
 }
 
 
@@ -212,3 +221,60 @@ std::string dFBAReaction::getReactionString(const dFBAModel& model) const {
     return reactionString;
 }
 
+
+
+bool dFBAReaction::hasGPR() const
+{
+    return !this->gpr.empty();
+}
+
+const dFBAGPR& dFBAReaction::getGPR() const
+{
+    return this->gpr;
+}
+
+dFBAGPR& dFBAReaction::getGPR()
+{
+    return this->gpr;
+}
+
+void dFBAReaction::setGPR(const dFBAGPR& value)
+{
+    this->gpr = value;
+}
+
+bool dFBAReaction::isKnockedOut() const
+{
+    return this->knockedOut;
+}
+
+void dFBAReaction::setKnockedOut(bool value)
+{
+    this->knockedOut = value;
+}
+
+void dFBAReaction::saveBoundsForKnockout()
+{
+    this->knockoutSavedLowerBound = this->lowerBound;
+    this->knockoutSavedUpperBound = this->upperBound;
+}
+
+double dFBAReaction::getKnockoutSavedLowerBound() const
+{
+    return this->knockoutSavedLowerBound;
+}
+
+double dFBAReaction::getKnockoutSavedUpperBound() const
+{
+    return this->knockoutSavedUpperBound;
+}
+
+void dFBAReaction::setKnockoutSavedLowerBound(double value)
+{
+    this->knockoutSavedLowerBound = value;
+}
+
+void dFBAReaction::setKnockoutSavedUpperBound(double value)
+{
+    this->knockoutSavedUpperBound = value;
+}
