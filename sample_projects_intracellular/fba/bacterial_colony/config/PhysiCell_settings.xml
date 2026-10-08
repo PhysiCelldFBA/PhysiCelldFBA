@@ -357,6 +357,13 @@
                 <R_EX_o2_e conserved="false" units="mmol/g DW cell/h" description="">0.0</R_EX_o2_e>
                 <R_EX_co2_e conserved="false" units="mmol/g DW cell/h" description="">0.0</R_EX_co2_e>
                 <growth_rate conserved="false" units="1/h" description="FBA growth rate">0.0</growth_rate>
+                <!-- Michaelis-Menten lower bound per exchange, for the FVA degeneracy
+                     diagnostic. See experiments_fva/. -->
+                <R_EX_glc__D_e_lb conserved="false" units="mmol/g DW cell/h" description="FBA exchange flux lower bound">0.0</R_EX_glc__D_e_lb>
+                <R_EX_ac_e_lb conserved="false" units="mmol/g DW cell/h" description="FBA exchange flux lower bound">0.0</R_EX_ac_e_lb>
+                <R_EX_lac__D_e_lb conserved="false" units="mmol/g DW cell/h" description="FBA exchange flux lower bound">0.0</R_EX_lac__D_e_lb>
+                <R_EX_o2_e_lb conserved="false" units="mmol/g DW cell/h" description="FBA exchange flux lower bound">0.0</R_EX_o2_e_lb>
+                <R_EX_co2_e_lb conserved="false" units="mmol/g DW cell/h" description="FBA exchange flux lower bound">0.0</R_EX_co2_e_lb>
             </custom_data>
             <initial_parameter_distributions enabled="false">
           </initial_parameter_distributions>
