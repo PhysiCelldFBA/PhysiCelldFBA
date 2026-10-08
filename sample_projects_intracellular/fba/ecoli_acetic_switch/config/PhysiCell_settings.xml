@@ -325,12 +325,23 @@
                 </intracellular>
             </phenotype>
             <custom_data>
-                <oxygen_flux conserved="false" units="mM/min" description="">0.0</oxygen_flux>
-                <glucose_flux conserved="false" units="mM/min" description="">0.0</glucose_flux>
-                <acetate_flux conserved="false" units="mM/min" description="">0.0</acetate_flux>
-                <co2_flux conserved="false" units="mM/min" description="">0.0</co2_flux>
-                <growth_rate conserved="false" units="1/min" description="">0.0</growth_rate>
-                <growth_factor conserved="false" units="1/min" description="">0.0</growth_factor>
+                <oxygen_flux conserved="false" units="mmol/g DW cell/h" description="">0.0</oxygen_flux>
+                <glucose_flux conserved="false" units="mmol/g DW cell/h" description="">0.0</glucose_flux>
+                <acetate_flux conserved="false" units="mmol/g DW cell/h" description="">0.0</acetate_flux>
+                <co2_flux conserved="false" units="mmol/g DW cell/h" description="">0.0</co2_flux>
+                <growth_rate conserved="false" units="1/h" description="">0.0</growth_rate>
+                <growth_factor conserved="false" units="1/h" description="">0.0</growth_factor>
+                <!-- Reaction-id-keyed flux and its Michaelis-Menten lower bound, for the
+                     FVA degeneracy diagnostic. The *_flux names above are the same
+                     fluxes under this project's established names. -->
+                <R_EX_glc__D_e conserved="false" units="mmol/g DW cell/h" description="FBA exchange flux">0.0</R_EX_glc__D_e>
+                <R_EX_glc__D_e_lb conserved="false" units="mmol/g DW cell/h" description="FBA exchange flux lower bound">0.0</R_EX_glc__D_e_lb>
+                <R_EX_ac_e conserved="false" units="mmol/g DW cell/h" description="FBA exchange flux">0.0</R_EX_ac_e>
+                <R_EX_ac_e_lb conserved="false" units="mmol/g DW cell/h" description="FBA exchange flux lower bound">0.0</R_EX_ac_e_lb>
+                <R_EX_o2_e conserved="false" units="mmol/g DW cell/h" description="FBA exchange flux">0.0</R_EX_o2_e>
+                <R_EX_o2_e_lb conserved="false" units="mmol/g DW cell/h" description="FBA exchange flux lower bound">0.0</R_EX_o2_e_lb>
+                <R_EX_co2_e conserved="false" units="mmol/g DW cell/h" description="FBA exchange flux">0.0</R_EX_co2_e>
+                <R_EX_co2_e_lb conserved="false" units="mmol/g DW cell/h" description="FBA exchange flux lower bound">0.0</R_EX_co2_e_lb>
             </custom_data>
             <initial_parameter_distributions enabled="false">
           </initial_parameter_distributions>

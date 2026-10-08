@@ -66,3 +66,4 @@ output/cells.csv
 /test_voxel_values
 __pycache__/
 *.py[cod]
+experiments/

@@ -74,6 +74,62 @@ class ModelSetup:
         "R_EX_phe_L_e", "R_EX_pi_e", "R_EX_ser_L_e", "R_EX_thr_L_e",
         "R_EX_trp_L_e", "R_EX_tyr_L_e", "R_EX_val_L_e",
     ])
+    sbml_filename: Optional[str] = None        # as written in the configuration
+
+    @classmethod
+    def from_config(cls, xml_path: str, cell_definition: Optional[str] = None
+                    ) -> "ModelSetup":
+        """Build the setup by reading the simulation's own configuration.
+
+        Preferred over writing the values out by hand: the replay has to apply
+        exactly the constraints the addon applied, and transcribing them is how
+        that silently stops being true.
+
+        ``cell_definition`` selects which definition to read when a project has
+        more than one carrying an <intracellular> block; the default is the
+        first one found.
+        """
+        root = ET.parse(xml_path).getroot()
+
+        node = None
+        for cd in root.iter("cell_definition"):
+            intra = cd.find(".//intracellular")
+            if intra is None or intra.get("type") != "dfba":
+                continue
+            if cell_definition is None or cd.get("name") == cell_definition:
+                node = intra
+                break
+        if node is None:
+            raise ValueError(f"{xml_path}: no dfba <intracellular> block"
+                             + (f" for cell definition {cell_definition!r}"
+                                if cell_definition else ""))
+
+        growth = node.find("growth_model")
+        objective = growth.find("objective_reaction").text.strip()
+        max_mu = float(growth.find("max_growth_rate").text)
+
+        # The addon floors the trigger flux only when the death model is enabled.
+        trigger, threshold = None, 0.0
+        death = node.find("death_model")
+        if death is not None and death.get("enabled", "false").lower() == "true":
+            t = death.find("death_trigger_flux")
+            v = death.find("death_flux_threshold")
+            if t is not None and (t.text or "").strip() not in ("", "None"):
+                trigger = t.text.strip()
+                threshold = float(v.text) if v is not None else 0.0
+
+        exchanges = [e.find("fba_flux").text.strip()
+                     for e in node.find("transport_model").findall("exchange")]
+
+        sbml = node.find("settings/sbml_filename")
+        setup = cls(objective_reaction=objective, max_growth_rate=max_mu,
+                    death_trigger_flux=trigger, death_flux_threshold=threshold,
+                    exchanges=exchanges,
+                    sbml_filename=sbml.text.strip() if sbml is not None else None)
+        print(f"setup from {os.path.basename(xml_path)}: {len(exchanges)} exchanges, "
+              f"objective {objective} <= {max_mu}, "
+              + (f"{trigger} >= {threshold}" if trigger else "no death-model floor"))
+        return setup
 
 
 # --------------------------------------------------------------------------- #
@@ -362,6 +418,9 @@ def main() -> None:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--output-dir", default="../output")
     ap.add_argument("--sbml", default="../config/MCF7_Zielinski_2017_core_trimmed.sbml")
+    ap.add_argument("--config", default=None,
+                    help="PhysiCell settings XML to read the LP setup from "
+                         "(strongly preferred over the built-in defaults)")
     ap.add_argument("--every", type=int, default=1,
                     help="keep one snapshot in EVERY (default: all)")
     ap.add_argument("--decimals", type=int, default=10,
@@ -371,7 +430,7 @@ def main() -> None:
                     help="write <prefix>_cells.csv and <prefix>_summary.csv")
     args = ap.parse_args()
 
-    setup = ModelSetup()
+    setup = (ModelSetup.from_config(args.config) if args.config else ModelSetup())
     df = read_run(args.output_dir, every=args.every)
     uniq, inverse = unique_bound_sets(df, setup.exchanges, decimals=args.decimals)
 
