@@ -148,12 +148,24 @@ void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phe
 
 	PhysiCelldFBA::dFBAIntracellular* dfba_model = static_cast<PhysiCelldFBA::dFBAIntracellular*>(phenotype.intracellular);
 
-		set_custom_data(pCell, "growth_rate", dfba_model->get_growth_rate());
-		std::vector<double>& density_vector = pCell->nearest_density_vector();
-	    for (const auto& exchange : dfba_model->substrate_exchanges) {
-        	const PhysiCelldFBA::ExchangeFluxData& ex = exchange.second;
-			set_custom_data(pCell, ex.fba_flux_id, dfba_model->get_flux_value(ex.fba_flux_id));
-		}
+	set_custom_data(pCell, "growth_rate", dfba_model->get_growth_rate());
+
+	// Record, per exchange, both the realised flux and the lower bound that
+	// constrained it. The bound is the Michaelis-Menten uptake limit that
+	// update_dfba_inputs applied for this cell at this step, so the pair is
+	// enough to replay the cell's LP offline and measure how much freedom the
+	// flux distribution actually had (FVA over the recorded constraint set).
+	//
+	// Only the lower bound is recorded: update_dfba_inputs never touches an
+	// exchange's upper bound, which stays at its static value from the SBML.
+	for (const auto& exchange : dfba_model->substrate_exchanges)
+	{
+		const PhysiCelldFBA::ExchangeFluxData& ex = exchange.second;
+		set_custom_data(pCell, ex.fba_flux_id,
+			dfba_model->get_flux_value(ex.fba_flux_id));
+		set_custom_data(pCell, ex.fba_flux_id + "_lb",
+			dfba_model->sbml_model.getReactionLowerBound(ex.fba_flux_id));
+	}
 
 	return;
 }
