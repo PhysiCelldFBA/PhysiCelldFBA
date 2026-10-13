@@ -67,3 +67,6 @@ output/cells.csv
 __pycache__/
 *.py[cod]
 experiments_fva/
+
+# compiler-generated header dependency files (-MMD)
+*.d
