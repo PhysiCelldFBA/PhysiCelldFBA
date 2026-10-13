@@ -73,3 +73,5 @@ addons/dFBA/test/test_clp
 addons/dFBA/test/test_fba
 addons/dFBA/test/test_gpr
 addons/dFBA/test/*.o
+# compiler-generated header dependency files (-MMD)
+*.d
