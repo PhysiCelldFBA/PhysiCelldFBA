@@ -3,16 +3,13 @@
 A dFBA-driven *E. coli* colony growing on a shared glucose substrate, built on the
 `iML1515_trimmed` genome-scale metabolic model. Each agent runs its own flux-balance
 optimization every `post_update_intracellular` step, so colony-scale growth and substrate
-depletion emerge from per-cell metabolism rather than a prescribed growth law.
+depletion emerge from per-cell metabolism rather than a pre-defined growth law.
 
 ## Contents
 
 - `config/Ecoli_core.xml` — core *E. coli* metabolic model (SBML) used by the dFBA intracellular model.
 - `config/PhysiCell_settings.xml` — main simulation configuration; sets the microenvironment, cell
   definitions, and the `sbml_filename` loaded by each agent.
-- `config/dfba_config.yaml` — standalone dFBA solver configuration kept for reference; not currently
-  wired into this project's XML pipeline (the model path is set directly via `sbml_filename` in
-  `PhysiCell_settings.xml`).
 - `custom_modules/custom.cpp`, `custom.h` — cell type setup (`create_cell_types`), initial colony
   layout (`setup_tissue`, `create_cell_disc_positions`), and per-step dFBA coupling
   (`post_update_intracellular`).
