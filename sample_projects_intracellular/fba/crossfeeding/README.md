@@ -14,10 +14,8 @@ state on `development` as of this branch's sync.
 
 ## Contents
 
-- `config/sbml_models/` — the two trimmed genome-scale models actually loaded via `sbml_filename`
-  in `PhysiCell_settings*.xml`. The `yaml/` subfolder (`c_beijerinckii.yaml`, `m_barkeri.yaml`,
-  `crossfeeding.yaml`, `models.yaml`) is not referenced by any config/script in this project as of
-  this writing — kept for reference pending confirmation of whether it's still needed.
+- `config/sbml_models/` — the two trimmed genome-scale models, loaded via `sbml_filename`
+  in `PhysiCell_settings*.xml`.
 - `config/PhysiCell_settings.xml` / `PhysiCell_settings_crossfeeding.xml` — simulation
   configuration; currently identical copies of the same crossfeeding scenario.
 - `config/200cells.csv` — initial cell positions for both species.
