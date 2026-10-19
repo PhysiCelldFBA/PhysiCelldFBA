@@ -17,13 +17,9 @@ Layout:
 Styling: Cell Systems–oriented sans-serif, solid lines only; large time gaps
 (e.g. last snapshot to ``final.xml``) are drawn as line breaks (NaN), not markers.
 
-Default data source: first available among
-  ``PhysiCelldFBA/.../Ecoli_static_ox_glc_job34054344/output``,
-  ``mn5sync_pdfba/.../job34054344/output``, then a bundled alternate run under
-  ``mn5sync_pdfba/.../Ecoli_acetate_switch_paper/.../output``.
-
-Override with ``--output-folder`` if needed. When ``final.xml`` is present it is
-appended after the saved ``output*.xml`` series (often 10 h).
+Pass ``--output-folder`` with the PhysiCell simulation output directory to analyze
+(contains ``output*.xml``). When ``final.xml`` is present it is appended after the
+saved ``output*.xml`` series (often 10 h).
 
 If the synced output uses the static-condition O₂ setup (flat ~0.5 mM domain mean),
 O₂ is taken from ``analysis/ecoli_o2_reference_job34054344.csv`` (definitive run).
@@ -48,24 +44,6 @@ import xml.etree.ElementTree as ET
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-def _default_ecoli_output_folder() -> str:
-    """Prefer definitive run; fall back to any synced tree with frames (PhysiCelldFBA or mn5sync_pdfba)."""
-    candidates = [
-        _REPO_ROOT
-        / 'PhysiCelldFBA/marco_outputs/ecoli/ecoli/Ecoli_static_ox_glc_job34054344/output',
-        _REPO_ROOT
-        / 'mn5sync_pdfba/marco_outputs/ecoli/ecoli/Ecoli_static_ox_glc_job34054344/output',
-        _REPO_ROOT
-        / 'mn5sync_pdfba/marco_outputs/ecoli/ecoli/Ecoli_acetate_switch_paper'
-        / 'Ecoli_static_ox_glc_job37998445/output',
-    ]
-    for p in candidates:
-        if p.is_dir() and any(p.glob('output*.xml')):
-            return str(p)
-    return str(candidates[0])
-
-
-OUTPUT_FOLDER = _default_ecoli_output_folder()
 RESULTS_DIR = str(_REPO_ROOT / 'analysis/results/ecoli')
 
 # ── colour palette (project standard) ───────────────────────────────────────
@@ -577,8 +555,6 @@ def _infer_sample_tag(output_folder: str) -> str:
 def _resolve_results_dir(output_folder: str, results_dir_arg: Optional[str]) -> str:
     if results_dir_arg is not None:
         return results_dir_arg
-    if os.path.abspath(output_folder) == os.path.abspath(OUTPUT_FOLDER):
-        return RESULTS_DIR
     return os.path.join(RESULTS_DIR, _infer_sample_tag(output_folder))
 
 
@@ -587,19 +563,19 @@ def main():
     ap = argparse.ArgumentParser(description='E. coli acetate-switch Figure A (time series).')
     ap.add_argument(
         '--output-folder',
-        default=None,
+        required=True,
         metavar='DIR',
-        help='PhysiCell output directory (contains output*.xml). '
-             'Default: first existing definitive or fallback run (PhysiCelldFBA or mn5sync_pdfba).',
+        help='PhysiCell output directory to analyze (contains output*.xml).',
     )
     ap.add_argument(
         '--results-dir',
         default=None,
         metavar='DIR',
-        help='Where to write figure_A.png/svg. Default: analysis/results/ecoli, or a subfolder named after the sample when --output-folder differs from the default.',
+        help='Where to write figure_A.png/svg. Default: analysis/results/ecoli/<sample-tag>, '
+             'where <sample-tag> is derived from --output-folder.',
     )
     args = ap.parse_args()
-    out_folder = args.output_folder or OUTPUT_FOLDER
+    out_folder = args.output_folder
     results_dir = _resolve_results_dir(out_folder, args.results_dir)
     os.makedirs(results_dir, exist_ok=True)
 
