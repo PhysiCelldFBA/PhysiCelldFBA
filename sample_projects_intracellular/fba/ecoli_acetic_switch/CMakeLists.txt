@@ -3,7 +3,7 @@ add_executable(${project})
 
 file(GLOB MODULES "custom_modules/*.cpp")
 
-target_sources(${project} PRIVATE main_ecoli_acetic_switch.cpp ${MODULES})
+target_sources(${project} PRIVATE main.cpp ${MODULES})
 
 target_link_libraries(${project} PRIVATE BioFVM PhysiCell-core-no-addon
                                          PhysiCell-modules-no-addon)
