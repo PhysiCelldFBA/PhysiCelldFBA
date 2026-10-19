@@ -17,8 +17,6 @@ longer runs).
   literature-derived parameters; pass as `argv[1]` to select.
 - `config/cells_reduced.csv`, `config/cells_large_scale.csv` — initial positions for the reduced
   (core model) and large-scale (iML1515) scenarios respectively.
-- `config/dfba_config.yaml` — standalone dFBA solver configuration kept for reference; not
-  currently loaded by any of this project's XML configs.
 - `custom_modules/custom.cpp`, `custom.h` — cell setup and the acetate-switch coupling logic.
 - `scripts/ecoli_acetate_switch.ipynb`, `dfba_analysis.py`, `fluxes_analysis.py` — flux/behavior
   analysis.
