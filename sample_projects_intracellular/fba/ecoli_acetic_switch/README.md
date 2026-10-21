@@ -7,6 +7,18 @@ nutrient refeeding for longer runs). This is the paper's reference scenario — 
 (`iML1515`) and literature-parameter variants were trimmed in favor of the single scenario the
 manuscript figures are generated from.
 
+## Build & run
+
+From this directory:
+```bash
+make
+./ecoli-dfba
+python scripts/plot_ecoli_figure_a.py --output-folder output
+python scripts/plot_ecoli_figure_b.py --output-folder output
+```
+
+Or from the repository root: `make ecoli-acetic-switch-sample && make && ./ecoli-dfba`.
+
 ## Contents
 
 - `config/Ecoli_core.xml` — the *E. coli* core metabolic model, loaded via `sbml_filename` in
@@ -19,18 +31,6 @@ manuscript figures are generated from.
 - `scripts/plot_ecoli_figure_b.py` — reproduces the paper's Figure B (spatial glucose/acetate
   panels at 0.5 h / 2 h / 4.5 h). Both are self-contained CLI scripts (stdlib +
   numpy/matplotlib/scipy only); `--output-folder` is required (no implicit default).
-
-## Build & run
-
-From this directory:
-```bash
-make
-./ecoli-dfba
-python scripts/plot_ecoli_figure_a.py --output-folder output
-python scripts/plot_ecoli_figure_b.py --output-folder output
-```
-
-Or from the repository root: `make ecoli-acetic-switch-sample && make`.
 
 ## Citation
 
