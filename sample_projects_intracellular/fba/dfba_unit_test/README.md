@@ -13,6 +13,17 @@ module, not a biological case study. It checks two things:
    of `config/voxel_sharing_test/Unit_test_voxel_sharing_{n1,n4,n8,mixed}.xml` and checks the
    output with `scripts/check_voxel_nonnegative.py` and `scripts/check_voxel_draw_equal.py`.
 
+## Build & run
+
+From this directory:
+```bash
+make
+./dfba-unit-test                                    # mass-conversion test (default config)
+bash scripts/run_voxel_sharing_test.sh ./dfba-unit-test   # voxel-sharing suite
+```
+
+Or from the repository root: `make dfba_unit_test && make && ./dfba-unit-test`.
+
 ## Contents
 
 - `config/PhysiCell_settings.xml` — default settings (used by plain `./dfba-unit-test` with no
@@ -27,17 +38,6 @@ module, not a biological case study. It checks two things:
   `ecoli_acetic_switch`).
 - `scripts/check_voxel_nonnegative.py`, `scripts/check_voxel_draw_equal.py` — pass/fail checks for
   the voxel-sharing scenarios.
-
-## Build & run
-
-From this directory:
-```bash
-make
-./dfba-unit-test                                    # mass-conversion test (default config)
-bash scripts/run_voxel_sharing_test.sh ./dfba-unit-test   # voxel-sharing suite
-```
-
-Or from the repository root: `make dfba_unit_test && make`.
 
 ## Citation
 
