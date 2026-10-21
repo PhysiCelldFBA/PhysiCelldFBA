@@ -6,20 +6,6 @@ metabolic model (`config/Ecoli_core.xml`). Each agent runs its own flux-balance 
 per-cell metabolism rather than a pre-defined growth law. Cells are placed procedurally in a
 close-packed disc (`setup_tissue` → `create_cell_disc_positions`), not loaded from a CSV.
 
-## Contents
-
-- `config/Ecoli_core.xml` — core *E. coli* metabolic model (SBML), loaded via `sbml_filename` in
-  `PhysiCell_settings.xml`.
-- `config/PhysiCell_settings.xml` — main simulation configuration; sets the microenvironment, cell
-  definitions, and the `sbml_filename` loaded by each agent.
-- `custom_modules/custom.cpp`, `custom.h` — cell type setup (`create_cell_types`), initial colony
-  layout (`setup_tissue`, `create_cell_disc_positions`), and per-step dFBA coupling
-  (`post_update_intracellular`).
-- `scripts/bacterial_colony_figures.ipynb` — **generates the paper's Figure 4** end-to-end from a
-  simulation output folder (per the notebook's own header).
-- `scripts/animate_svg.sh` — standalone utility; stitches per-timestep SVG snapshots into an MP4
-  animation via inkscape/ffmpeg.
-
 ## Build & run
 
 From this directory (standalone):
@@ -36,6 +22,20 @@ make
 ```
 
 Output (SVG snapshots, MultiCellDS `.mat`/`.xml` frames) is written to `./output/`.
+
+## Contents
+
+- `config/Ecoli_core.xml` — core *E. coli* metabolic model (SBML), loaded via `sbml_filename` in
+  `PhysiCell_settings.xml`.
+- `config/PhysiCell_settings.xml` — main simulation configuration; sets the microenvironment, cell
+  definitions, and the `sbml_filename` loaded by each agent.
+- `custom_modules/custom.cpp`, `custom.h` — cell type setup (`create_cell_types`), initial colony
+  layout (`setup_tissue`, `create_cell_disc_positions`), and per-step dFBA coupling
+  (`post_update_intracellular`).
+- `scripts/bacterial_colony_figures.ipynb` — **generates the paper's Figure 4** end-to-end from a
+  simulation output folder (per the notebook's own header).
+- `scripts/animate_svg.sh` — standalone utility; stitches per-timestep SVG snapshots into an MP4
+  animation via inkscape/ffmpeg.
 
 ## Citation
 
