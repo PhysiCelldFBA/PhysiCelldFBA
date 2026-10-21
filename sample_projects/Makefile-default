@@ -336,7 +336,6 @@ crossfeeding:
 	cp -r ./sample_projects_intracellular/fba/crossfeeding/config/* ./config/
 		mkdir ./scripts/
 	cp -r ./sample_projects_intracellular/fba/crossfeeding/scripts/* ./scripts/
-	cp ./config/PhysiCell_settings_crossfeeding.xml ./config/PhysiCell_settings.xml
 
 
 metabolic_driven_motility:
