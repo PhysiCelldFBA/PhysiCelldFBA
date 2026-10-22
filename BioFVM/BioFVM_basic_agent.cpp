@@ -56,7 +56,7 @@
 
 namespace BioFVM{
 
-// EXPERIMENTAL: serialise the read-modify-write of a voxel's density vector.
+// Serialise the read-modify-write of a voxel's density vector.
 // simulate_cell_sources_and_sinks() calls simulate_secretion_and_uptake() from an
 // omp parallel for over agents; two agents in one voxel would otherwise update the
 // same density vector concurrently (lost updates, order-dependent results). A fixed
