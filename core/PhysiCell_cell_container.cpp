@@ -286,7 +286,8 @@ void Cell_Container::update_all_cells(double t, double phenotype_dt_ , double me
 void Cell_Container::update_all_cells_intracellular( void )
 {
 	bool anything_to_update = false; // Use a simple boolean for reduction
-	std::vector<bool> ready_to_update_intracellular = std::vector<bool>( (*all_cells).size(), false );
+	// std::vector<bool> is bit-packed: concurrent writes to neighbouring elements from the parallel loop below race and lose flags.
+	std::vector<char> ready_to_update_intracellular = std::vector<char>( (*all_cells).size(), 0 );
 
 	#pragma omp parallel for reduction(||:anything_to_update)
 	for( int i=0; i < (*all_cells).size(); i++ )
