@@ -123,6 +123,11 @@ void setup_tissue(void)
 	double Yrange = Ymax - Ymin; 
 	double Zrange = Zmax - Zmin; 
 	
+	// Cells from a CSV file (config <cell_positions enabled="true">): used by the update-order test,
+	// where the row order of the file sets the order of all_cells. The default placement is unchanged.
+	if( load_cells_from_pugixml() )
+	{ return; }
+
 	// create some of each type of cell 
 	
 	Cell* pC;
