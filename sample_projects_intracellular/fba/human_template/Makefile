@@ -1,5 +1,5 @@
 VERSION := $(shell grep . VERSION.txt | cut -f1 -d:)
-PROGRAM_NAME := cancer-metabolism
+PROGRAM_NAME := human-template
 
 CC := g++
 

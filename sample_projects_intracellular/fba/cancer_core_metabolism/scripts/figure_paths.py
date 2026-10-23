@@ -11,7 +11,6 @@ import sys
 from pathlib import Path
 
 _SCRIPTS = Path(__file__).resolve().parent
-_PROJECT = _SCRIPTS.parent  # cancer_core_metabolism/
 
 
 def _as_cwd_relative(path: Path) -> Path:
@@ -25,12 +24,9 @@ def find_scripts_dir(start: Path | None = None) -> Path:
     rel_candidates = [
         Path("."),
         Path("scripts"),
-        # From a PhysiCell / mn5sync checkout root:
+        # From a PhysiCelldFBA checkout root:
         Path("sample_projects_intracellular/fba/cancer_core_metabolism/scripts"),
-        Path("mn5sync_pdfba/sample_projects_intracellular/fba/cancer_core_metabolism/scripts"),
         Path("../sample_projects_intracellular/fba/cancer_core_metabolism/scripts"),
-        Path("../mn5sync_pdfba/sample_projects_intracellular/fba/cancer_core_metabolism/scripts"),
-        Path("../../mn5sync_pdfba/sample_projects_intracellular/fba/cancer_core_metabolism/scripts"),
     ]
     for rel in rel_candidates:
         cand = (start / rel).resolve()
@@ -45,16 +41,6 @@ def find_scripts_dir(start: Path | None = None) -> Path:
             return _as_cwd_relative(parent / "scripts")
         cand = (
             parent
-            / "sample_projects_intracellular"
-            / "fba"
-            / "cancer_core_metabolism"
-            / "scripts"
-        )
-        if (cand / "figure_paths.py").is_file():
-            return _as_cwd_relative(cand)
-        cand = (
-            parent
-            / "mn5sync_pdfba"
             / "sample_projects_intracellular"
             / "fba"
             / "cancer_core_metabolism"
@@ -78,9 +64,6 @@ def ensure_paths(scripts_dir: Path | None = None) -> Path:
         Path("python_libs"),
         Path("../python_libs"),
         Path("../../python_libs"),
-        Path("mn5sync_pdfba/python_libs"),
-        Path("../mn5sync_pdfba/python_libs"),
-        Path("../../mn5sync_pdfba/python_libs"),
     ]
     for lib in lib_candidates:
         lib_abs = (Path.cwd() / lib).resolve()
@@ -103,16 +86,13 @@ def ensure_paths(scripts_dir: Path | None = None) -> Path:
 def default_output_dir() -> Path:
     """Best-effort PhysiCell output folder (relative to cwd when possible).
 
-    Prefers the standard sample-project ``output/`` directory. Override with
-    ``--output-dir`` / notebook ``OUTPUT_DIR`` for custom run folders.
+    After a normal top-level build (``make cancer-core-metabolism && make``
+    from the PhysiCelldFBA repo root), the binary writes to ``<repo_root>/output``.
+    Override with ``--output-dir`` / notebook ``OUTPUT_DIR`` for custom run folders.
     """
     candidates = [
         Path("output"),
         Path("../output"),
-        _PROJECT / "output",
-        # Optional alternate names some local workflows use:
-        Path("output_lit"),
-        Path("../output_lit"),
     ]
     for c in candidates:
         probe = c if c.is_absolute() else (Path.cwd() / c)

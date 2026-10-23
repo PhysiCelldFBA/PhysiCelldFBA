@@ -82,7 +82,7 @@ list-projects:
 	@echo "                 asymmetric-division-sample immune-function-sample episode-sample"
 	@echo ""
 	@echo "Sample intracellular projects: template_BM ode-energy-sample physiboss-cell-lines-sample"
-	@echo "                 cancer-metabolism-sample crossfeeding physiboss-tutorial physiboss-tutorial-invasion bacterial-colony metabolic_driven_motility"
+	@echo "                 human-template-sample crossfeeding physiboss-tutorial physiboss-tutorial-invasion bacterial-colony metabolic_driven_motility"
 	@echo ""
 	
 template:
@@ -291,20 +291,18 @@ dfba_unit_test:
 	cp Makefile Makefile-backup
 	cp ./sample_projects_intracellular/fba/dfba_unit_test/Makefile ./
 	cp ./config/PhysiCell_settings.xml ./config/PhysiCell_settings-backup.xml
-	cp ./sample_projects_intracellular/fba/dfba_unit_test/config/* ./config/
+	cp -r ./sample_projects_intracellular/fba/dfba_unit_test/config/* ./config/
 	mkdir ./scripts/
 	cp ./sample_projects_intracellular/fba/dfba_unit_test/scripts/* ./scripts/
 
-cancer-metabolism-sample:
-	cp ./sample_projects_intracellular/fba/cancer_metabolism/custom_modules/* ./custom_modules/
+human-template-sample:
+	cp ./sample_projects_intracellular/fba/human_template/custom_modules/* ./custom_modules/
 	touch main.cpp && cp main.cpp main-backup.cpp
-	cp ./sample_projects_intracellular/fba/cancer_metabolism/main.cpp ./main.cpp
+	cp ./sample_projects_intracellular/fba/human_template/main.cpp ./main.cpp
 	cp Makefile Makefile-backup
-	cp ./sample_projects_intracellular/fba/cancer_metabolism/Makefile ./
+	cp ./sample_projects_intracellular/fba/human_template/Makefile ./
 	cp ./config/PhysiCell_settings.xml ./config/PhysiCell_settings-backup.xml
-	cp ./sample_projects_intracellular/fba/cancer_metabolism/config/* ./config/
-	mkdir ./scripts/
-	cp ./sample_projects_intracellular/fba/cancer_metabolism/scripts/* ./scripts/
+	cp ./sample_projects_intracellular/fba/human_template/config/* ./config/
 
 cancer-core-metabolism:
 	cp ./sample_projects_intracellular/fba/cancer_core_metabolism/custom_modules/* ./custom_modules/
@@ -338,7 +336,6 @@ crossfeeding:
 	cp -r ./sample_projects_intracellular/fba/crossfeeding/config/* ./config/
 		mkdir ./scripts/
 	cp -r ./sample_projects_intracellular/fba/crossfeeding/scripts/* ./scripts/
-	cp ./config/PhysiCell_settings_crossfeeding.xml ./config/PhysiCell_settings.xml
 
 
 metabolic_driven_motility:

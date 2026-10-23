@@ -2,7 +2,7 @@
 
 MAX_HOURS_DEFAULT = 50
 
-# Simulation / flux conversion constants (PhysiCell_settings_crossfeeding.xml)
+# Simulation / flux conversion constants (PhysiCell_settings.xml)
 DFBA_DT_MIN = 0.01
 VOXEL_DX_UM = 0.8
 VOXEL_VOLUME_UM3 = VOXEL_DX_UM ** 3
