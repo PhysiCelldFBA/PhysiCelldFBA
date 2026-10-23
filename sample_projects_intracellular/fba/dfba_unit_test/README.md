@@ -15,14 +15,13 @@ module, not a biological case study. It checks two things:
 
 ## Build & run
 
-From this directory:
+From the repository root:
 ```bash
+make dfba_unit_test
 make
 ./dfba-unit-test                                    # mass-conversion test (default config)
 bash scripts/run_voxel_sharing_test.sh ./dfba-unit-test   # voxel-sharing suite
 ```
-
-Or from the repository root: `make dfba_unit_test && make && ./dfba-unit-test`.
 
 ## Contents
 
@@ -38,6 +37,12 @@ Or from the repository root: `make dfba_unit_test && make && ./dfba-unit-test`.
   `ecoli_acetic_switch`).
 - `scripts/check_voxel_nonnegative.py`, `scripts/check_voxel_draw_equal.py` — pass/fail checks for
   the voxel-sharing scenarios.
+
+## Figure reproducibility
+
+| Manuscript figure | Panels | Script | XML input | Expected output |
+|---|---|---|---|---|
+| Main Figure 2 (mass-conservation validation) | A: glucose and CO₂ over time; B: biomass against the analytical prediction, with cell count | `scripts/dfba_analysis.ipynb` | `config/PhysiCell_settings.xml` (default; no arguments) | `<output_folder>/dfba_unit_test_mass_conversion.svg` |
 
 ## Citation
 

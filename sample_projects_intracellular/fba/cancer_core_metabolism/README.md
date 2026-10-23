@@ -7,18 +7,12 @@ across the vessel.
 
 ## Build & run
 
-From this directory (standalone):
-```bash
-make
-./cancer-core-metabolism                      # default FBA config
-./cancer-core-metabolism config/PhysiCell_settings_pfba.xml   # pFBA variant
-```
-
-Or from the repository root:
+From the repository root:
 ```bash
 make cancer-core-metabolism
 make
-./cancer-core-metabolism
+./cancer-core-metabolism                      # default FBA config
+./cancer-core-metabolism config/PhysiCell_settings_pfba.xml   # pFBA variant
 ```
 
 ## Contents
@@ -34,6 +28,22 @@ make
 | `scripts/preprocess_dfba_model.ipynb` | COBRA-based model preparation notebook; also regenerates `config/dfba_model.yaml` (a standalone dFBA solver config kept out of the repo since nothing reads it back — rerun this notebook if you need it). **Currently broken**: it reads `../config/cells_large.csv`, which no longer exists in this project. |
 | `scripts/oxygen_dependency_experiment.ipynb`, `reduced_cost_analysis.ipynb` | Standalone COBRA-based model-curation notebooks (FVA, pFBA reduced-cost analysis); not part of the figure pipeline below. |
 | `scripts/cancer_tissue_figures.ipynb` | Figure pipeline entry point: imports `figure_generation.py`, which imports `plot_cancer_tissue_spatial.py` and `plot_cancer_tissue_spatial_gif.py`, which import `plot_cells_spatial.py` and `plot_exchange_profiles.py`; `plot_cells_spatial.py` imports `composite_figure_style.py`. Path resolution (`figure_paths.py`) assumes a PhysiCelldFBA checkout and defaults the PhysiCell output directory to `output` relative to the notebook's working directory — i.e. the top-level `./output` produced by `make cancer-core-metabolism && make` run from the repo root. |
+
+## Figure reproducibility
+
+The notebook sets `TIME_POINT = 72.0` h, the time point of the supplementary panels, and writes to
+`output/fig/`.
+
+| Manuscript figure | Panels | Script | XML input | Expected output |
+|---|---|---|---|---|
+| Main Figure 5A (growth rate and viability near the vessel) | Spatial map | `scripts/cancer_tissue_figures.ipynb` (growth-rate cell) | `config/PhysiCell_settings.xml` | `output/fig/growth_rate_72h.svg` |
+| Main Figure 5B (net uptake and secretion against distance to the vessel) | Profile grid | same notebook (`--net-export-rates` cell) | same | `output/fig/net_export_rates_grid_72h.svg` |
+| Supplementary Figure S8 (extracellular concentration gradients, 15 metabolites) | Concentration grid | same notebook (`--concentration-grid` cell) | same | `output/fig/substrate_concentration_grid_72h.png` |
+| Supplementary Figure S9 (uptake heatmaps by phenotypic zone) | Five processes: O₂, glucose, glutamine, glycine, lactate | `python scripts/figure_generation.py --output-dir output --fig-dir output/fig --time-point 72 --uptake-stack` | same | `output/fig/uptake_stack_72h.png` |
+
+The notebook's final cell also writes `growth_rate.gif`, `uptake_stack.gif` and `substrate_profiles.gif`
+(full time series). These are supplementary animations and are not individually numbered in the
+manuscript. `output/fig/` is created relative to `OUTPUT_DIR` (see Build & run).
 
 ## Citation
 
