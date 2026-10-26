@@ -49,8 +49,31 @@
 #include "BioFVM_basic_agent.h"
 #include "BioFVM_agent_container.h"
 #include "BioFVM_vector.h" 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+#include <vector>
 
 namespace BioFVM{
+
+// Serialise the read-modify-write of a voxel's density vector.
+// simulate_cell_sources_and_sinks() calls simulate_secretion_and_uptake() from an
+// omp parallel for over agents; two agents in one voxel would otherwise update the
+// same density vector concurrently (lost updates, order-dependent results). A fixed
+// pool of locks indexed by voxel keeps agents in different voxels fully parallel.
+namespace {
+#ifdef _OPENMP
+struct VoxelLockPool
+{
+	static const int n_locks = 4096;
+	omp_lock_t locks[n_locks];
+	VoxelLockPool()  { for( int i=0 ; i < n_locks ; i++ ){ omp_init_lock( &locks[i] ); } }
+	~VoxelLockPool() { for( int i=0 ; i < n_locks ; i++ ){ omp_destroy_lock( &locks[i] ); } }
+	omp_lock_t* lock_for( long long voxel_index ) { return &locks[ (unsigned long long) voxel_index % n_locks ]; }
+};
+VoxelLockPool voxel_lock_pool;
+#endif
+}
 
 std::vector<Basic_Agent*> all_basic_agents(0); 
 
@@ -321,6 +344,10 @@ void Basic_Agent::simulate_secretion_and_uptake( Microenvironment* pS, double dt
 		volume_is_changed = false;
 	}
 	
+#ifdef _OPENMP
+	omp_lock_t* voxel_lock = voxel_lock_pool.lock_for( current_voxel_index );
+	omp_set_lock( voxel_lock );
+#endif
 	if( default_microenvironment_options.track_internalized_substrates_in_each_agent == true )
 	{
 		total_extracellular_substrate_change.assign( total_extracellular_substrate_change.size() , 1.0 ); // 1
@@ -344,6 +371,9 @@ void Basic_Agent::simulate_secretion_and_uptake( Microenvironment* pS, double dt
 		*internalized_substrates -= cell_source_sink_solver_temp_export1; 
 	}
 
+#ifdef _OPENMP
+	omp_unset_lock( voxel_lock );
+#endif
 	return; 
 }
 
