@@ -31,6 +31,9 @@ bash scripts/run_voxel_sharing_test.sh ./dfba-unit-test   # voxel-sharing suite
   scenarios (n agents per voxel, or a mixed layout), passed explicitly to the binary by
   `run_voxel_sharing_test.sh`.
 - `config/Ecoli_core.xml` — the *E. coli* core metabolic model used by every scenario above.
+- `config/Ecoli_core.yaml` — dFBA definition (substrates, cell definition and dFBA block) of the
+  default `config/PhysiCell_settings.xml`; input for `addons/dFBA/utils/dfba_configurator.py` (see
+  `addons/dFBA/utils/README.md`). The voxel-sharing XMLs have no YAML of their own.
 - `custom_modules/custom.cpp`, `custom.h` — single-agent dFBA coupling for the unit test.
 - `scripts/dfba_analysis.ipynb` — plots mass-conversion results and saves the paper figure.
 - `scripts/plot_df_journal_style_ext.py` — shared plotting style helper (also used by
