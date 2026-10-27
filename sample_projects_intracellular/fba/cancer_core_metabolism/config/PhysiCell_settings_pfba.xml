@@ -845,12 +845,12 @@
             <reference_volume units="pg">2494</reference_volume>
             <max_growth_rate units="1/min">0.026803</max_growth_rate>
             <objective_reaction>R_biomass_reaction</objective_reaction>
+            <!-- Second optimisation stage: hold the objective at its optimum and
+                 minimise total flux, which selects one flux distribution among the
+                 equally optimal ones. Addresses the alternative-optima question.
+                 Remove this block, or set enabled="false", for plain FBA. -->
+            <secondary_objective type="parsimonious" enabled="true" fraction_of_optimum="1.0"/>
           </growth_model>
-          <!-- Second optimisation stage: hold the objective at its optimum and
-               minimise total flux, which selects one flux distribution among the
-               equally optimal ones. Addresses the alternative-optima question.
-               Remove this block, or set enabled="false", for plain FBA. -->
-          <secondary_objective type="parsimonious" enabled="true" fraction_of_optimum="1.0"/>
           <death_model enabled="true">
             <death_type units="unitless">necrosis</death_type>
             <death_trigger_flux units="unitless">R_ATPM</death_trigger_flux>

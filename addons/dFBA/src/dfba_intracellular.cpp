@@ -481,8 +481,23 @@ void dFBAIntracellular::initialize_intracellular_from_pugixml(pugi::xml_node& no
         exit(-1); 
     }
 
-    // parsing the optional second optimisation stage
-    pugi::xml_node node_secondary = node.child( "secondary_objective" );
+    // parsing the optional second optimisation stage. It belongs to the growth model
+    // (<growth_model><secondary_objective .../>); the earlier position, directly under
+    // <intracellular>, is still read with a deprecation warning.
+    pugi::xml_node node_secondary = node_growth_model.child( "secondary_objective" );
+    pugi::xml_node node_secondary_legacy = node.child( "secondary_objective" );
+    if ( node_secondary && node_secondary_legacy )
+    {
+        std::cout << "Error: <secondary_objective> is given both inside <growth_model> and directly under <intracellular>." << std::endl;
+        std::cout << "Keep only the one inside <growth_model>." << std::endl;
+        exit(-1);
+    }
+    if ( node_secondary_legacy )
+    {
+        std::cout << "[Warning] <secondary_objective> directly under <intracellular> is deprecated. "
+                  << "Move it inside <growth_model>." << std::endl;
+        node_secondary = node_secondary_legacy;
+    }
     if ( node_secondary )
         parse_secondary_objective(node_secondary);
 
