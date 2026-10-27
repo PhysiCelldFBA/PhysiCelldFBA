@@ -160,11 +160,18 @@ void setup_tissue(void)
 void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt ){
 
 	
-	pCell->custom_data["growth_rate"] = pCell->phenotype.intracellular->get_growth_rate();
-	pCell->custom_data["oxygen_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_o2_e");
-	pCell->custom_data["glucose_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_glc__D_e");
-	pCell->custom_data["acetate_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_ac_e");
-	pCell->custom_data["co2_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_co2_e");
+	PhysiCelldFBA::dFBAIntracellular* dfba_model = static_cast<PhysiCelldFBA::dFBAIntracellular*>(phenotype.intracellular);
+
+	pCell->custom_data["growth_rate"] = dfba_model->get_growth_rate();
+
+	// Per exchange, record the realised flux and the lower bound that constrained it,
+	// under the SBML reaction id (R_EX_*, R_EX_*_lb), as in the other use cases.
+	for (const auto& exchange : dfba_model->substrate_exchanges)
+	{
+		const std::string& id = exchange.second.fba_flux_id;
+		pCell->custom_data[id] = dfba_model->get_flux_value(id);
+		pCell->custom_data[id + "_lb"] = dfba_model->sbml_model.getReactionLowerBound(id);
+	}
 	return;
 }
 
