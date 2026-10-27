@@ -57,13 +57,19 @@ struct Ledger
 	{
 		F.assign( nsub , 0.0 );
 		long long nv = microenvironment.number_of_voxels();
-		for( int j = 0 ; j < nsub ; j++ )
+		// one pass over the voxels with a private partial sum per thread (the per-substrate loop was strided over memory)
+		#pragma omp parallel
 		{
-			double s = 0.0;
-			#pragma omp parallel for reduction(+:s)
+			std::vector<double> loc( nsub , 0.0 );
+			#pragma omp for nowait
 			for( long long i = 0 ; i < nv ; i++ )
-			{ s += microenvironment.density_vector(i)[j] * microenvironment.mesh.voxels[i].volume; }
-			F[j] = s;
+			{
+				const std::vector<double>& d = microenvironment.density_vector(i);
+				double v = microenvironment.mesh.voxels[i].volume;
+				for( int j = 0 ; j < nsub ; j++ ) { loc[j] += d[j] * v; }
+			}
+			#pragma omp critical( dfba_ledger_sum )
+			{ for( int j = 0 ; j < nsub ; j++ ) { F[j] += loc[j]; } }
 		}
 	}
 
@@ -165,20 +171,21 @@ inline void begin_cells( double dt )
 	L.note_gap( L.F_c0 );
 	L.E_dt.assign( L.nsub , 0.0 ); L.gross_dt.assign( L.nsub , 0.0 );
 	long long na = all_basic_agents.size();
-	for( int j = 0 ; j < L.nsub ; j++ )
+	#pragma omp parallel
 	{
-		double e = 0.0, g = 0.0;
-		#pragma omp parallel for reduction(+:e,g)
+		std::vector<double> e( L.nsub , 0.0 ), g( L.nsub , 0.0 );
+		#pragma omp for nowait
 		for( long long a = 0 ; a < na ; a++ )
 		{
 			Basic_Agent* p = all_basic_agents[a];
 			if( p->is_active == false ) { continue; }
 			// a newborn's net_export_rates pointer is bound to its phenotype only in its first advance(), so read the phenotype
 			PhysiCell::Cell* pc = dynamic_cast<PhysiCell::Cell*>( p );
-			double x = ( pc ? pc->phenotype.secretion.net_export_rates[j] : (*(p->net_export_rates))[j] ) * dt;
-			e += x; g += std::fabs( x );
+			const std::vector<double>& r = pc ? pc->phenotype.secretion.net_export_rates : *(p->net_export_rates);
+			for( int j = 0 ; j < L.nsub ; j++ ) { double x = r[j] * dt; e[j] += x; g[j] += std::fabs( x ); }
 		}
-		L.E_dt[j] = e; L.gross_dt[j] = g;
+		#pragma omp critical( dfba_ledger_sum )
+		{ for( int j = 0 ; j < L.nsub ; j++ ) { L.E_dt[j] += e[j]; L.gross_dt[j] += g[j]; } }
 	}
 }
 
