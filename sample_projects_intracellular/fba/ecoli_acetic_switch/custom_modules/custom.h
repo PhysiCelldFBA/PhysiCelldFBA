@@ -73,6 +73,8 @@
 
 #include "../core/PhysiCell.h"
 #include "../modules/PhysiCell_standard_modules.h" 
+#include "../addons/dFBA/src/dfba_intracellular.h"
+#include "../addons/dFBA/src/dfba_Model.h"
 
 using namespace BioFVM; 
 using namespace PhysiCell;
