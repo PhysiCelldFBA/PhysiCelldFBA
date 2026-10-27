@@ -15,7 +15,9 @@ make
 ./bacterial-colony
 ```
 
-Output (SVG snapshots, MultiCellDS `.mat`/`.xml` frames) is written to `./output/`.
+The default run starts from a colony of 10 µm radius in a ±500 µm domain with 4 mM glucose and 5 mM
+oxygen (initial and boundary concentrations), and simulates 10 h (`max_time` 600 min). Output is written to `./output/`:
+MultiCellDS `.xml`/`.mat` frames every 30 min and SVG snapshots every 5 min.
 
 ## Contents
 
@@ -23,6 +25,8 @@ Output (SVG snapshots, MultiCellDS `.mat`/`.xml` frames) is written to `./output
   `PhysiCell_settings.xml`.
 - `config/PhysiCell_settings.xml` — main simulation configuration; sets the microenvironment, cell
   definitions, and the `sbml_filename` loaded by each agent.
+- `config/Ecoli_core.yaml` — dFBA definition (substrates, exchanges, growth and death model) of the
+  dFBA setup in `PhysiCell_settings.xml`; input for `addons/dFBA/utils/dfba_configurator.py` (see `addons/dFBA/utils/README.md`).
 - `custom_modules/custom.cpp`, `custom.h` — cell type setup (`create_cell_types`), initial colony
   layout (`setup_tissue`, `create_cell_disc_positions`), and per-step dFBA coupling
   (`post_update_intracellular`).
