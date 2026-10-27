@@ -21,11 +21,11 @@
 // window minus F at the end of the previous one.
 // Output: <folder>/conservation_ledger.csv, one row every `row_every` steps (cumulative sums).
 //
-// Opt-in. The ledger is off unless the configuration declares the user parameter
-//   <dfba_conservation_ledger type="int" ...>1</dfba_conservation_ledger>
-// and, optionally, <dfba_conservation_ledger_row_every type="int" ...>N</dfba_conservation_ledger_row_every> (default 100).
-// While it is off the five hooks in main.cpp cost one branch per call and nothing else. The ledger only reads the
-// microenvironment and the agents' net_export_rates; it changes no simulation state.
+// Opt-in, set in the configuration inside the dFBA intracellular settings of any cell definition:
+//   <intracellular type="dfba"><settings> ... <dfba_conservation_ledger row_every="100">true</dfba_conservation_ledger>
+// (false or absent: off; row_every is optional, default 100). While it is off the five hooks in main.cpp cost one
+// branch per call and nothing else. The ledger only reads the microenvironment and the agents' net_export_rates;
+// it changes no simulation state.
 
 #include <cmath>
 #include <cstdio>
@@ -152,10 +152,20 @@ inline bool enabled()
 	if( state < 0 )
 	{
 		state = 0;
-		int i = parameters.ints.find_index( "dfba_conservation_ledger" );
-		if( i >= 0 && parameters.ints( i ) > 0 ) { state = 1; }
-		int r = parameters.ints.find_index( "dfba_conservation_ledger_row_every" );
-		if( state == 1 && r >= 0 && parameters.ints( r ) > 0 ) { get().row_every = parameters.ints( r ); }
+		pugi::xml_node cds = physicell_config_root.child( "cell_definitions" );
+		for( pugi::xml_node cd = cds.child( "cell_definition" ) ; cd ; cd = cd.next_sibling( "cell_definition" ) )
+		{
+			pugi::xml_node in = cd.child( "phenotype" ).child( "intracellular" );
+			if( !in || std::string( in.attribute( "type" ).value() ) != "dfba" ) { continue; }
+			pugi::xml_node led = in.child( "settings" ).child( "dfba_conservation_ledger" );
+			if( !led ) { continue; }
+			if( PhysiCell::xml_get_my_bool_value( led ) )
+			{
+				state = 1;
+				int r = led.attribute( "row_every" ).as_int( 0 );
+				if( r > 0 ) { get().row_every = r; }
+			}
+		}
 	}
 	return state == 1;
 }
