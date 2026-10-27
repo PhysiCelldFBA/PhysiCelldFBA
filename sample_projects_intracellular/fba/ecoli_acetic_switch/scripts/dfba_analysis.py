@@ -62,6 +62,11 @@ def get_domain_volume(xml_path):
     x_range = x_max - x_min
     y_range = y_max - y_min
     z_range = z_max - z_min
+    # In a 2D run PhysiCell ignores z_min/z_max and uses a slab of thickness dz
+    # (modules/PhysiCell_settings.cpp), so that slab is the volume the cells share.
+    use_2d = domain.find("use_2D")
+    if use_2d is not None and use_2d.text.strip().lower() == "true":
+        z_range = float(domain.find("dz").text)
     
     return x_range * y_range * z_range
 
