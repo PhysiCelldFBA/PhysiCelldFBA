@@ -42,8 +42,8 @@
             <enable>true</enable>
         </full_data>
         <SVG>
-            <interval units="min">1</interval>
-            <enable>false</enable>
+            <interval units="min">10</interval>
+            <enable>true</enable>
             <plot_substrate enabled="true" limits="false">
                 <substrate>oxygen</substrate>
                 <min_conc>0.0</min_conc>

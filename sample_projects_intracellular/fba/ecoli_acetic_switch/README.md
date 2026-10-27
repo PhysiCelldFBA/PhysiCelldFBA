@@ -21,7 +21,7 @@ python scripts/plot_ecoli_figure_b.py --output-folder output
 ```
 
 The default run simulates 10 h (`max_time` 600 min) with 3 OpenMP threads and writes full data every
-5 min; SVG snapshots are off.
+5 min; SVG snapshots are written every 10 min.
 
 ## Contents
 
