@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Write the voxel-size / time-step configs for the dx-dt test (run_dxdt_test.sh).
 
-Base: config/Unit_test_mass_conversion.xml (one e_coli_core cell in a closed 16 um box).
+Base: config/PhysiCell_settings.xml (one e_coli_core cell in a closed 16 um box).
 Only dx (= dy = dz), dt_diffusion and intracellular_dt (kept equal, the rule of the addon), the run length,
 the thread count and the output folder change. The box size does not change, so the total glucose is the same at every dx.
 
@@ -14,7 +14,7 @@ usage: gen_dxdt_configs.py <config_dir> [max_time_min]
 import re, sys, os
 cdir = sys.argv[1]
 T = sys.argv[2] if len(sys.argv) > 2 else "120"
-base = open(os.path.join(cdir, "Unit_test_mass_conversion.xml")).read()
+base = open(os.path.join(cdir, "PhysiCell_settings.xml")).read()
 DX = [0.8, 1.6, 3.2]
 DT = [0.005, 0.01, 0.02]
 

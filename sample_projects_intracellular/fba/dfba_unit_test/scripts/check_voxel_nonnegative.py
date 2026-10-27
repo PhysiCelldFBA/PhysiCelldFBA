@@ -7,7 +7,7 @@ voxel the summed sink can be n times the content, and BioFVM applies the
 net_export_rate as an explicit term with no positivity protection, so the
 extracellular concentration goes negative.
 
-Run on the output of config/Unit_test_voxel_sharing_n{1,8}.xml. Glucose has no
+Run on the output of config/voxel_sharing_test/Unit_test_voxel_sharing_n{1,8}.xml. Glucose has no
 transport in those configs, so every voxel is an isolated pool and the check
 exposes the cap arithmetic alone. n=1 is the control: one cell's request fits in
 the voxel and the cap is irrelevant to it. n=8 must also stay non-negative.
