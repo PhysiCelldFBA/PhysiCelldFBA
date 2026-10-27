@@ -34,6 +34,7 @@ def make(kind, dx, dt):
     s = sub1(r"(<full_data>\s*<interval units=\"min\">)[^<]*", r"\g<1>30", s)
     s = sub1(r"(<SVG>\s*<interval units=\"min\">)[^<]*", r"\g<1>30", s)
     s = sub1(r"(<SVG>\s*<interval units=\"min\">[^<]*</interval>\s*<enable>)true", r"\g<1>false", s)
+    s = sub1(r"(<user_parameters>)", r'\g<1>\n        <dfba_conservation_ledger type="int" units="dimensionless" description="write conservation_ledger.csv">1</dfba_conservation_ledger>', s)
     name = f"dxdt_{kind}_dx{dx}_dt{dt}"
     s = sub1(r"(<save>\s*<folder>)[^<]*", rf"\g<1>output_{name}", s)
     if kind == "capped":

@@ -20,6 +20,12 @@
 // "ext" is material added outside both windows (for example reinjecting oxygen): F at the start of a
 // window minus F at the end of the previous one.
 // Output: <folder>/conservation_ledger.csv, one row every `row_every` steps (cumulative sums).
+//
+// Opt-in. The ledger is off unless the configuration declares the user parameter
+//   <dfba_conservation_ledger type="int" ...>1</dfba_conservation_ledger>
+// and, optionally, <dfba_conservation_ledger_row_every type="int" ...>N</dfba_conservation_ledger_row_every> (default 100).
+// While it is off the five hooks in main.cpp cost one branch per call and nothing else. The ledger only reads the
+// microenvironment and the agents' net_export_rates; it changes no simulation state.
 
 #include <cmath>
 #include <cstdio>
@@ -133,9 +139,25 @@ struct Ledger
 
 inline Ledger& get() { static Ledger L; return L; }
 
+// read once, on the first call (made from the serial part of the main loop, never from inside a parallel region)
+inline bool enabled()
+{
+	static int state = -1;
+	if( state < 0 )
+	{
+		state = 0;
+		int i = parameters.ints.find_index( "dfba_conservation_ledger" );
+		if( i >= 0 && parameters.ints( i ) > 0 ) { state = 1; }
+		int r = parameters.ints.find_index( "dfba_conservation_ledger_row_every" );
+		if( state == 1 && r >= 0 && parameters.ints( r ) > 0 ) { get().row_every = parameters.ints( r ); }
+	}
+	return state == 1;
+}
+
 // ---- cells window (wrap update_all_cells) ----
 inline void begin_cells( double dt )
 {
+	if( !enabled() ) { return; }
 	Ledger& L = get();
 	if( !L.initialised ) { L.init(); }
 	L.dt_c = dt;
@@ -162,6 +184,7 @@ inline void begin_cells( double dt )
 
 inline void end_cells()
 {
+	if( !enabled() ) { return; }
 	Ledger& L = get();
 	std::vector<double> F;
 	L.total_content( F );
@@ -177,6 +200,7 @@ inline void end_cells()
 // ---- diffusion window (wrap simulate_diffusion_decay) ----
 inline void begin_diffusion( double dt )
 {
+	if( !enabled() ) { return; }
 	Ledger& L = get();
 	if( !L.initialised ) { L.init(); }
 	L.dt_d = dt;
@@ -187,6 +211,7 @@ inline void begin_diffusion( double dt )
 
 inline void end_diffusion( double t_after )
 {
+	if( !enabled() ) { return; }
 	Ledger& L = get();
 	std::vector<double> F, B1;
 	L.total_content( F );
