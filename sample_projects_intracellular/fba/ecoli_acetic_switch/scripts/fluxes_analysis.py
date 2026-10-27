@@ -5,8 +5,12 @@ This script reads cell matrices via `pctk.multicellds.MultiCellDS` and uses the
 `output*.xml` <labels> section as the authoritative source for the column indices
 of custom_data fields.
 
-The cell data are the exchange fluxes written by custom.cpp under their SBML reaction ids
-(R_EX_o2_e, R_EX_glc__D_e, R_EX_ac_e, R_EX_co2_e), with the applied lower bound in <id>_lb.
+Adapted for the PhysiCell dFBA case where you write:
+
+    oxygen_flux   <- R_EX_o2_e
+    glucose_flux  <- R_EX_glc__D_e
+    acetate_flux  <- R_EX_ac_e
+    co2_flux      <- R_EX_co2_e
 
 You can point it at a single `output/` folder or at a `runs/` directory to batch
 process multiple simulations.
@@ -30,14 +34,14 @@ DEFAULT_RUNS_DIR = "runs"  # repo-root default; we also try ../runs as a fallbac
 DEFAULT_RESULTS_DIR = "results"
 
 # Flux names MUST match exactly what you write into custom_data in C++
-DEFAULT_FLUXES = ["R_EX_o2_e", "R_EX_glc__D_e", "R_EX_ac_e", "R_EX_co2_e"]
+DEFAULT_FLUXES = ["oxygen_flux", "glucose_flux", "acetate_flux", "co2_flux"]
 
 # A simple, consistent palette
 DEFAULT_COLORS = {
-    "R_EX_o2_e": "#4daf4a",   # green
-    "R_EX_glc__D_e": "#377eb8",  # blue
-    "R_EX_ac_e": "#ff7f00",  # orange
-    "R_EX_co2_e": "#555555",      # dark gray
+    "oxygen_flux": "#4daf4a",   # green
+    "glucose_flux": "#377eb8",  # blue
+    "acetate_flux": "#ff7f00",  # orange
+    "co2_flux": "#555555",      # dark gray
 }
 
 DEFAULT_BAND_MODE = "quantile"  # better than std when distributions are skewed/outlier-heavy
@@ -319,7 +323,7 @@ def main():
         action="append",
         dest="fluxes",
         default=None,
-        help="Flux custom_data field to plot. Repeatable. Default plots R_EX_o2_e, R_EX_glc__D_e, R_EX_ac_e, R_EX_co2_e.",
+        help="Flux custom_data field to plot. Repeatable. Default plots oxygen_flux, glucose_flux, acetate_flux, co2_flux.",
     )
     parser.add_argument(
         "--band",
