@@ -11,29 +11,38 @@ From the repository root:
 ```bash
 make metabolic_driven_motility
 make
-./ecoli-dfba-motility config/PhysiCell_settings_motility.xml
+./ecoli-dfba-motility config/PhysiCell_settings_motility_proliferation.xml   # growth-permissive -> output_motility_prolif/
+./ecoli-dfba-motility config/PhysiCell_settings_motility.xml                 # motility only     -> output_motility/
 ```
+
+The project ships two scenario configs, which differ in the glucose K_m (0.02 and 0.5 mM),
+`glucose_threshold_low` and `motility_cost_at_vmax`. Always pass one of them as `argv[1]`: without an
+argument the program loads the repository's own `config/PhysiCell_settings.xml`, not a scenario of
+this project. SVG snapshots are enabled in both.
 
 ## Contents
 
 - `config/Ecoli_core.xml` — core *E. coli* model used by all scenario configs.
-- `config/PhysiCell_settings.xml` — default configuration.
-- `config/PhysiCell_settings_motility.xml`, `PhysiCell_settings_motility_proliferation.xml`,
-  `PhysiCell_settings_no_motility.xml`, `PhysiCell_settings_multiple_sources.xml` — alternate
-  scenarios (motility only, motility + proliferation, proliferation without motility, multiple
-  glucose sources); select by passing the file as `argv[1]`.
+- `config/PhysiCell_settings_motility_proliferation.xml` — growth-permissive scenario (motility +
+  proliferation, glucose K_m 0.02 mM); writes to `output_motility_prolif/`.
+- `config/PhysiCell_settings_motility.xml` — motility-only scenario (glucose K_m 0.5 mM); writes to
+  `output_motility/`.
+- `config/Ecoli_core_motility_proliferation.yaml`, `config/Ecoli_core_motility.yaml` — dFBA definitions
+  of the two scenario configs above; inputs for `addons/dFBA/utils/dfba_configurator.py` (see
+  `addons/dFBA/utils/README.md`).
 - `config/cells.csv` — initial cell positions, shared by all scenarios.
 - `custom_modules/custom.cpp`, `custom.h` — the objective-switching logic
   (`custom_atp_optimization`), secretion-node setup (`setup_secretion_nodes`), and the migration
   rule.
-- `scripts/composite_figure.py` — **generates the paper's figure** comparing representative
-  scenarios (no motility/no growth, motility/no growth, motility + growth recovery); standalone
-  CLI, outputs `fig_representative_scenarios.svg/png`.
+- `scripts/composite_figure.py` — **generates the paper's figure** comparing the two scenarios
+  (growth-permissive and motility-only); standalone CLI, outputs
+  `fig_representative_scenarios.svg/png`.
 - `scripts/dynamic_analysis.py` — standalone CLI; population-dynamics and phase-portrait figures
-  plus a cells-over-glucose animation.
+  plus a cells-over-glucose animation. Reads `output_motility_prolif/` by default; pass
+  `--output-dir` for the other scenario.
 - `scripts/fluxes_analysis.py` — standalone CLI; exchange-flux plots.
 - `scripts/dynamics_analysis.ipynb` — exploratory notebook; reads simulation output from
-  `../output/` relative to its own location (i.e. `<repo_root>/scripts/` after
+  `../output_motility_prolif/` relative to its own location (i.e. `<repo_root>/scripts/` after
   `make metabolic_driven_motility`).
 
 ## Figure reproducibility
@@ -43,12 +52,12 @@ K_m: a growth-permissive case (low K_m) and a motility-only case (higher K_m). E
 XML, which writes to its own `<folder>`, so the two outputs can be kept side by side.
 
 ```bash
-./ecoli-dfba-motility config/PhysiCell_settings_motility_proliferation.xml   # -> output_motility_proliferation_lit/
-./ecoli-dfba-motility config/PhysiCell_settings_motility.xml                 # -> output_motility_lit/
+./ecoli-dfba-motility config/PhysiCell_settings_motility_proliferation.xml   # -> output_motility_prolif/
+./ecoli-dfba-motility config/PhysiCell_settings_motility.xml                 # -> output_motility/
 
 python scripts/composite_figure.py \
-    --scenario output_motility_proliferation_lit::"Growth-permissive (K_m 0.02 mM)" \
-    --scenario output_motility_lit::"Motility only (K_m 0.5 mM)" \
+    --scenario output_motility_prolif::"Growth-permissive (K_m 0.02 mM)" \
+    --scenario output_motility::"Motility only (K_m 0.5 mM)" \
     --results-dir results/representative_scenarios
 ```
 
