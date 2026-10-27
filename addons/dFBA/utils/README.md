@@ -31,3 +31,16 @@ python addons/dFBA/utils/dfba_configurator.py --output <config.xml> --config <mo
 
 `--sbml-folder` resolves the relative `sbml_path` entries in the YAML. The YAML can contain one or
 several models; each model key becomes a dFBA-enabled cell definition.
+
+The configurator writes a new PhysiCell XML containing only the substrates, the cell definitions
+(with their volumes) and the dFBA block. The rest of the settings (domain, motility, rules) are not
+generated and must be set by hand.
+
+### Known limitations
+
+- `sbml_path` must be given under `settings:` in each model (not directly under the model key).
+- The `physicell-settings` library requires a positive `nuclear_volume`. Prokaryote models use 0, so
+  give a small positive placeholder in the YAML and set the nuclear volume to 0 in the XML afterwards.
+- The XML it writes labels `Vmax` as `fmol/pg DW cell/min` and `max_growth_rate` as `1/min`. The
+  dFBA code stores these unit strings but does not use them in any calculation, so the numbers in
+  the YAML are used as given (the sample project XMLs label them `mmol/gDW cell/h` and `1/h`).
