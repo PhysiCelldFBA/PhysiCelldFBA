@@ -16,9 +16,9 @@
         <y_max>8</y_max>
         <z_min>-8</z_min>
         <z_max>8</z_max>
-        <dx>1.6</dx>
-        <dy>1.6</dy>
-        <dz>1.6</dz>
+        <dx>2.0</dx>
+        <dy>2.0</dy>
+        <dz>2.0</dz>
         <use_2D>false</use_2D>
     </domain>
 
@@ -26,9 +26,9 @@
         <max_time units="min">240</max_time>
         <time_units>min</time_units>
         <space_units>micron</space_units>
-        <dt_diffusion units="min">0.01</dt_diffusion>
-        <dt_mechanics units="min">0.1</dt_mechanics>
-        <dt_phenotype units="min">6</dt_phenotype>
+        <dt_diffusion units="min">0.001</dt_diffusion>
+        <dt_mechanics units="min">0.001</dt_mechanics>
+        <dt_phenotype units="min">0.001</dt_phenotype>
     </overall>
 
     <parallel>
@@ -283,7 +283,7 @@
                 <intracellular type="dfba">
                     <settings>
                         <sbml_filename>./config/Ecoli_core.xml</sbml_filename>
-                        <intracellular_dt>0.01</intracellular_dt>
+                        <intracellular_dt>0.001</intracellular_dt>
                     </settings>
                     <transport_model>
                         <exchange substrate="glucose">

@@ -26,7 +26,8 @@ bash scripts/run_voxel_sharing_test.sh ./dfba-unit-test   # voxel-sharing suite
 ## Contents
 
 - `config/PhysiCell_settings.xml` — default settings (used by plain `./dfba-unit-test` with no
-  args); this is the mass-conversion test scenario.
+  args); this is the mass-conversion test scenario: a 16 × 16 × 16 µm domain with 2 µm voxels, all
+  time steps 0.001 min (the grid and time steps of the other *E. coli* samples), 240 min.
 - `config/voxel_sharing_test/Unit_test_voxel_sharing_{n1,n4,n8,mixed}.xml` — voxel-sharing
   scenarios (n agents per voxel, or a mixed layout), passed explicitly to the binary by
   `run_voxel_sharing_test.sh`.

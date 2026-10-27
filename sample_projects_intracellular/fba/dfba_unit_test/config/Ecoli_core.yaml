@@ -44,7 +44,7 @@ models:
   ecoli1:
     settings:
       sbml_path: "Ecoli_core.xml"      # relative to --sbml-folder
-      intracellular_dt: 0.01  # min
+      intracellular_dt: 0.001  # min
 
     exchanges:
       - substrate: "glucose"
