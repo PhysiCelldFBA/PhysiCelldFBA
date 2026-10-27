@@ -14,11 +14,11 @@
         <x_max>100</x_max>
         <y_min>-100</y_min>
         <y_max>100</y_max>
-        <z_min>-0.75</z_min>
-        <z_max>0.75</z_max>
-        <dx>0.8</dx>
-        <dy>0.8</dy>
-        <dz>0.8</dz>
+        <z_min>-0.625</z_min>
+        <z_max>0.625</z_max>
+        <dx>1.25</dx>
+        <dy>1.25</dy>
+        <dz>1.25</dz>
         <use_2D>true</use_2D>
     </domain>
 
@@ -26,7 +26,7 @@
         <max_time units="min">3000</max_time>
         <time_units>min</time_units>
         <space_units>micron</space_units>
-        <dt_diffusion units="min">0.01</dt_diffusion>
+        <dt_diffusion units="min">0.001</dt_diffusion>
         <dt_mechanics units="min">0.1</dt_mechanics>
         <dt_phenotype units="min">6</dt_phenotype>
     </overall>
@@ -36,7 +36,7 @@
     </parallel>
 
     <save>
-        <folder>output_exp4</folder>
+        <folder>output</folder>
         <full_data>
             <interval units="min">30</interval>
             <enable>true</enable>
@@ -376,7 +376,7 @@
                 <intracellular type="dfba">
                     <settings>
                         <sbml_filename>./config/sbml_models/C_beijerinckii_model_iCB925_trimmed.xml</sbml_filename>
-                        <intracellular_dt units="min">0.01</intracellular_dt>
+                        <intracellular_dt units="min">0.001</intracellular_dt>
                     </settings>
                     <transport_model>
                         <exchange substrate="glucose">
@@ -461,6 +461,14 @@
                 <MB_growth_rate conserved="false" units="1/h" description="">0.0</MB_growth_rate>
                 <MB_fba_infeasible conserved="false" units="dimensionless" description="1 if last dFBA LP was infeasible">0.0</MB_fba_infeasible>
                 <methane_flux conserved="false" units="mM/min" description="">0.0</methane_flux>
+                <R_EX_glc_D_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_glc_D_e_lb>
+                <R_EX_h2_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_h2_e_lb>
+                <R_EX_nh4_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_nh4_e_lb>
+                <R_EX_pi_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_pi_e_lb>
+                <R_EX_so4_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_so4_e_lb>
+                <R_EX_ac_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_ac_e_lb>
+                <R_EX_co2_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_co2_e_lb>
+                <R_EX_ch4_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_ch4_e_lb>
             </custom_data>
             <initial_parameter_distributions enabled="false">
           </initial_parameter_distributions>
@@ -633,7 +641,7 @@
                 <intracellular type="dfba">
                     <settings>
                         <sbml_filename>./config/sbml_models/M_barkeri_model_iMG746_trimmed.xml</sbml_filename>
-                        <intracellular_dt units="min">0.01</intracellular_dt>
+                        <intracellular_dt units="min">0.001</intracellular_dt>
                     </settings>
                     <transport_model>
                         <exchange substrate="CO2">
@@ -708,6 +716,14 @@
                 <MB_growth_rate conserved="false" units="1/h" description="">0.0</MB_growth_rate>
                 <MB_fba_infeasible conserved="false" units="dimensionless" description="1 if last dFBA LP was infeasible">0.0</MB_fba_infeasible>
                 <methane_flux conserved="false" units="mM/min" description="">0.0</methane_flux>
+                <R_EX_glc_D_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_glc_D_e_lb>
+                <R_EX_h2_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_h2_e_lb>
+                <R_EX_nh4_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_nh4_e_lb>
+                <R_EX_pi_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_pi_e_lb>
+                <R_EX_so4_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_so4_e_lb>
+                <R_EX_ac_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_ac_e_lb>
+                <R_EX_co2_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_co2_e_lb>
+                <R_EX_ch4_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_ch4_e_lb>
             </custom_data>
             <initial_parameter_distributions enabled="false">
           </initial_parameter_distributions>

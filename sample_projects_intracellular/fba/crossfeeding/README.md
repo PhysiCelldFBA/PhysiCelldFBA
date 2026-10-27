@@ -19,6 +19,9 @@ make
 ./crossfeeding
 ```
 
+The default run simulates 50 h (`max_time` 3000 min) on a 1.25 µm voxel grid (2-D, ±100 µm) and writes
+full data and SVG snapshots every 30 min to `./output/`.
+
 Figures are regenerated from a simulation output folder via
 `scripts/paper_figures/run_paper_figures.py` — see `scripts/paper_figures/README.md`.
 
@@ -28,6 +31,8 @@ Figures are regenerated from a simulation output folder via
   in `PhysiCell_settings.xml`.
 - `config/PhysiCell_settings.xml` — simulation configuration (the only config; a byte-identical
   `PhysiCell_settings_crossfeeding.xml` duplicate was removed).
+- `config/sbml_models/yaml/crossfeeding.yaml` — dFBA definition of both species (substrates, exchanges,
+  growth and death model); input for `addons/dFBA/utils/dfba_configurator.py` with `--sbml-folder config/sbml_models`.
 - `config/200cells.csv` — initial cell positions for both species.
 - `config/rules.csv` — PhysiCell cell-behavior rules.
 - `custom_modules/custom.cpp`, `custom.h` — species-specific dFBA coupling, Dirichlet-node

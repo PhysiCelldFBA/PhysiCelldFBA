@@ -1,0 +1,157 @@
+# dFBA Configuration File
+# dFBA definition of the crossfeeding sample project: C. beijerinckii and M. barkeri (both species in one file).
+# Input for addons/dFBA/utils/dfba_configurator.py, which writes the substrates, the cell definition and the
+# dFBA block of the PhysiCell XML. The rest of PhysiCell_settings.xml (domain, motility, ...) is set by hand.
+#
+# Structure:
+#   substrates: List of substrate configurations for the microenvironment
+#     Each substrate contains:
+#       - name: Substrate name (must match substrate names in exchanges)
+#       - diffusion_coefficient: Diffusion coefficient (micron^2/min)
+#       - decay_rate: Decay rate (1/min)
+#       - initial_condition: Initial concentration (mM)
+#
+#   models: Dictionary of model configurations, keyed by cell definition name
+#     Each model contains:
+#       - settings: sbml_path (relative to --sbml-folder or absolute) and intracellular_dt
+#       - exchanges: List of exchange reaction configurations
+#       - growth_model: Growth model parameters
+#       - death_model: Death model configuration
+#
+
+substrates:
+  - name: "glucose"
+    diffusion_coefficient: 40000.0  # micron^2/min
+    decay_rate: 0  # 1/min
+    initial_condition: 1  # mM
+
+  - name: "methane"
+    diffusion_coefficient: 90000  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "CO2"
+    diffusion_coefficient: 115000  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 1  # mM
+
+  - name: "H2"
+    diffusion_coefficient: 270000  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0  # mM
+
+  - name: "NH4"
+    diffusion_coefficient: 118000  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 5  # mM
+
+  - name: "Pi"
+    diffusion_coefficient: 53000  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 5  # mM
+
+  - name: "SO4"
+    diffusion_coefficient: 64000  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 5  # mM
+
+  - name: "acetate"
+    diffusion_coefficient: 72000  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0  # mM
+
+models:
+# Clostridium beijerinckii (iCB925): glucose fermenter that produces H2
+  c_beijerinckii:
+    settings:
+      sbml_path: "C_beijerinckii_model_iCB925_trimmed.xml"      # relative to --sbml-folder
+      intracellular_dt: 0.001  # min
+
+    exchanges:
+      - substrate: "glucose"
+        fba_flux: "R_EX_glc_D_e"
+        Km: 1      # mM
+        Vmax: 7.5    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "H2"
+        fba_flux: "R_EX_h2_e"
+        Km: 0.1      # mM
+        Vmax: 0.0    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "NH4"
+        fba_flux: "R_EX_nh4_e"
+        Km: 0.001      # mM
+        Vmax: 15.0    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "Pi"
+        fba_flux: "R_EX_pi_e"
+        Km: 0.001      # mM
+        Vmax: 15.0    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "SO4"
+        fba_flux: "R_EX_so4_e"
+        Km: 0.001      # mM
+        Vmax: 15.0    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "acetate"
+        fba_flux: "R_EX_ac_e"
+        Km: 0.1      # mM
+        Vmax: 0.0    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "CO2"
+        fba_flux: "R_EX_co2_e"
+        Km: 0.1      # mM
+        Vmax: 0.0    # mmol/gDW cell/h (as in the project XML)
+
+    growth_model:
+      cell_density: 1.04  # g/ml
+      reference_volume: 1.3  # pg
+      nuclear_volume: 0  # micron^3; 0 as in the project XML (physicell-settings rejects 0, see addons/dFBA/utils/README.md)
+      max_growth_rate: 0.4  # 1/h (units label as in the project XML)
+      objective_reaction: "R_biomass"
+
+    death_model:
+      enabled: false
+      death_type: "apoptosis"
+      death_trigger_flux: R_biomass
+      death_flux_threshold: 0.005
+      death_rate_increase: 5e-4
+# Methanosarcina barkeri (iMG746): methanogen that consumes H2 and CO2 to produce methane
+  m_barkeri:
+    settings:
+      sbml_path: "M_barkeri_model_iMG746_trimmed.xml"      # relative to --sbml-folder
+      intracellular_dt: 0.001  # min
+
+    exchanges:
+      - substrate: "CO2"
+        fba_flux: "R_EX_co2_e"
+        Km: 0.0001      # mM
+        Vmax: 100.0    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "H2"
+        fba_flux: "R_EX_h2_e"
+        Km: 0.05      # mM
+        Vmax: 20.0    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "methane"
+        fba_flux: "R_EX_ch4_e"
+        Km: 0.0001      # mM
+        Vmax: 0.0    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "NH4"
+        fba_flux: "R_EX_nh4_e"
+        Km: 0.0001      # mM
+        Vmax: 10.0    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "Pi"
+        fba_flux: "R_EX_pi_e"
+        Km: 0.0001      # mM
+        Vmax: 10    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "acetate"
+        fba_flux: "R_EX_ac_e"
+        Km: 0.0001      # mM
+        Vmax: 3.0    # mmol/gDW cell/h (as in the project XML)
+
+    growth_model:
+      cell_density: 1.04  # g/ml
+      reference_volume: 1.8  # pg
+      nuclear_volume: 0  # micron^3; 0 as in the project XML (physicell-settings rejects 0, see addons/dFBA/utils/README.md)
+      max_growth_rate: 0.12  # 1/h (units label as in the project XML)
+      objective_reaction: "R_Mb_biomass_65"
+
+    death_model:
+      enabled: false
+      death_type: "necrosis"
+      death_trigger_flux: R_Mb_biomass_65
+      death_flux_threshold: 0.0
+      death_rate_increase: 1e-5
