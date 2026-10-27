@@ -164,7 +164,7 @@ def add_intracellular_dfba(cell_def, sbml_path, model_config):
     secondary_config = model_config.get("secondary_objective")
     if secondary_config:
         etree.SubElement(
-            intracellular,
+            growth,
             "secondary_objective",
             type=str(secondary_config.get("type", "parsimonious")),
             enabled=str(secondary_config.get("enabled", True)).lower(),

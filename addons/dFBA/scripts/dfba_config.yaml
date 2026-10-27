@@ -15,7 +15,7 @@
 #       - exchanges: List of exchange reaction configurations
 #       - growth_model: Growth model parameters (optional, uses hardcoded defaults if not specified)
 #       - settings: Intracellular settings (optional, uses hardcoded defaults if not specified)
-#       - secondary_objective: Optional second optimisation stage, e.g. pFBA (omitted entirely if absent)
+#       - secondary_objective: Optional second optimisation stage, e.g. pFBA (omitted entirely if absent); written inside <growth_model>
 #       - death_model: Death model configuration (optional, uses hardcoded defaults if not specified)
 #
 
@@ -83,7 +83,7 @@ models:
     settings:
       intracellular_dt: 0.01          # Intracellular time step (min)
     
-    # Secondary objective (optional - omit for standard FBA, which is the default).
+    # Secondary objective (optional - omit for standard FBA, which is the default). Written inside <growth_model>.
     # Runs a second optimisation after the objective has been maximised, to pick
     # one flux distribution among the equally optimal ones. Without it the solver
     # returns an arbitrary vertex, and in dFBA that vertex is what sets the
