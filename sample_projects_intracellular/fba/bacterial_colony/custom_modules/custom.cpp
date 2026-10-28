@@ -172,6 +172,8 @@ void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phe
 	for (const auto& exchange : dfba_model->substrate_exchanges) {
 		const PhysiCelldFBA::ExchangeFluxData& ex = exchange.second;
 		set_custom_data(pCell, ex.fba_flux_id, dfba_model->get_flux_value(ex.fba_flux_id));
+		// the lower bound applied to this exchange at this step (Michaelis-Menten uptake limit, after the voxel cap)
+		set_custom_data(pCell, ex.fba_flux_id + "_lb", dfba_model->sbml_model.getReactionLowerBound(ex.fba_flux_id));
 	}
 
 	set_custom_data(pCell, "growth_rate", dfba_model->get_growth_rate());
