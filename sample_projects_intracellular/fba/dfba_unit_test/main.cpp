@@ -79,7 +79,7 @@
 // put custom code modules here! 
 
 #include "./custom_modules/custom.h" 
-#include "./custom_modules/dfba_conservation_ledger.h"
+#include "./addons/dFBA/src/dfba_conservation_ledger.h"
 	
 using namespace BioFVM;
 using namespace PhysiCell;

@@ -79,6 +79,7 @@
 // put custom code modules here! 
 
 #include "./custom_modules/custom.h" 
+#include "./addons/dFBA/src/dfba_conservation_ledger.h"
 	
 using namespace BioFVM;
 using namespace PhysiCell;
@@ -223,10 +224,14 @@ int main( int argc, char* argv[] )
 			// apply_glucose_dirichlet_refeed_schedule();
 
 			// run PhysiCell 
+			dfba_ledger::begin_cells( diffusion_dt );
 			((Cell_Container *)microenvironment.agent_container)->update_all_cells( PhysiCell_globals.current_time );
+			dfba_ledger::end_cells();
 
 			// update the microenvironment
+			dfba_ledger::begin_diffusion( diffusion_dt );
 			microenvironment.simulate_diffusion_decay( diffusion_dt );
+			dfba_ledger::end_diffusion( PhysiCell_globals.current_time + diffusion_dt );
 			
 			/*
 			  Custom add-ons could potentially go here. 

@@ -20,6 +20,12 @@
 // "ext" is material added outside both windows (for example reinjecting oxygen): F at the start of a
 // window minus F at the end of the previous one.
 // Output: <folder>/conservation_ledger.csv, one row every `row_every` steps (cumulative sums).
+//
+// Opt-in, set in the configuration inside the dFBA intracellular settings of any cell definition:
+//   <intracellular type="dfba"><settings> ... <dfba_conservation_ledger row_every="100">true</dfba_conservation_ledger>
+// (false or absent: off; row_every is optional, default 100). While it is off the five hooks in main.cpp cost one
+// branch per call and nothing else. The ledger only reads the microenvironment and the agents' net_export_rates;
+// it changes no simulation state.
 
 #include <cmath>
 #include <cstdio>
@@ -51,13 +57,19 @@ struct Ledger
 	{
 		F.assign( nsub , 0.0 );
 		long long nv = microenvironment.number_of_voxels();
-		for( int j = 0 ; j < nsub ; j++ )
+		// one pass over the voxels with a private partial sum per thread (the per-substrate loop was strided over memory)
+		#pragma omp parallel
 		{
-			double s = 0.0;
-			#pragma omp parallel for reduction(+:s)
+			std::vector<double> loc( nsub , 0.0 );
+			#pragma omp for nowait
 			for( long long i = 0 ; i < nv ; i++ )
-			{ s += microenvironment.density_vector(i)[j] * microenvironment.mesh.voxels[i].volume; }
-			F[j] = s;
+			{
+				const std::vector<double>& d = microenvironment.density_vector(i);
+				double v = microenvironment.mesh.voxels[i].volume;
+				for( int j = 0 ; j < nsub ; j++ ) { loc[j] += d[j] * v; }
+			}
+			#pragma omp critical( dfba_ledger_sum )
+			{ for( int j = 0 ; j < nsub ; j++ ) { F[j] += loc[j]; } }
 		}
 	}
 
@@ -133,9 +145,35 @@ struct Ledger
 
 inline Ledger& get() { static Ledger L; return L; }
 
+// read once, on the first call (made from the serial part of the main loop, never from inside a parallel region)
+inline bool enabled()
+{
+	static int state = -1;
+	if( state < 0 )
+	{
+		state = 0;
+		pugi::xml_node cds = physicell_config_root.child( "cell_definitions" );
+		for( pugi::xml_node cd = cds.child( "cell_definition" ) ; cd ; cd = cd.next_sibling( "cell_definition" ) )
+		{
+			pugi::xml_node in = cd.child( "phenotype" ).child( "intracellular" );
+			if( !in || std::string( in.attribute( "type" ).value() ) != "dfba" ) { continue; }
+			pugi::xml_node led = in.child( "settings" ).child( "dfba_conservation_ledger" );
+			if( !led ) { continue; }
+			if( PhysiCell::xml_get_my_bool_value( led ) )
+			{
+				state = 1;
+				int r = led.attribute( "row_every" ).as_int( 0 );
+				if( r > 0 ) { get().row_every = r; }
+			}
+		}
+	}
+	return state == 1;
+}
+
 // ---- cells window (wrap update_all_cells) ----
 inline void begin_cells( double dt )
 {
+	if( !enabled() ) { return; }
 	Ledger& L = get();
 	if( !L.initialised ) { L.init(); }
 	L.dt_c = dt;
@@ -143,25 +181,27 @@ inline void begin_cells( double dt )
 	L.note_gap( L.F_c0 );
 	L.E_dt.assign( L.nsub , 0.0 ); L.gross_dt.assign( L.nsub , 0.0 );
 	long long na = all_basic_agents.size();
-	for( int j = 0 ; j < L.nsub ; j++ )
+	#pragma omp parallel
 	{
-		double e = 0.0, g = 0.0;
-		#pragma omp parallel for reduction(+:e,g)
+		std::vector<double> e( L.nsub , 0.0 ), g( L.nsub , 0.0 );
+		#pragma omp for nowait
 		for( long long a = 0 ; a < na ; a++ )
 		{
 			Basic_Agent* p = all_basic_agents[a];
 			if( p->is_active == false ) { continue; }
 			// a newborn's net_export_rates pointer is bound to its phenotype only in its first advance(), so read the phenotype
 			PhysiCell::Cell* pc = dynamic_cast<PhysiCell::Cell*>( p );
-			double x = ( pc ? pc->phenotype.secretion.net_export_rates[j] : (*(p->net_export_rates))[j] ) * dt;
-			e += x; g += std::fabs( x );
+			const std::vector<double>& r = pc ? pc->phenotype.secretion.net_export_rates : *(p->net_export_rates);
+			for( int j = 0 ; j < L.nsub ; j++ ) { double x = r[j] * dt; e[j] += x; g[j] += std::fabs( x ); }
 		}
-		L.E_dt[j] = e; L.gross_dt[j] = g;
+		#pragma omp critical( dfba_ledger_sum )
+		{ for( int j = 0 ; j < L.nsub ; j++ ) { L.E_dt[j] += e[j]; L.gross_dt[j] += g[j]; } }
 	}
 }
 
 inline void end_cells()
 {
+	if( !enabled() ) { return; }
 	Ledger& L = get();
 	std::vector<double> F;
 	L.total_content( F );
@@ -177,6 +217,7 @@ inline void end_cells()
 // ---- diffusion window (wrap simulate_diffusion_decay) ----
 inline void begin_diffusion( double dt )
 {
+	if( !enabled() ) { return; }
 	Ledger& L = get();
 	if( !L.initialised ) { L.init(); }
 	L.dt_d = dt;
@@ -187,6 +228,7 @@ inline void begin_diffusion( double dt )
 
 inline void end_diffusion( double t_after )
 {
+	if( !enabled() ) { return; }
 	Ledger& L = get();
 	std::vector<double> F, B1;
 	L.total_content( F );
