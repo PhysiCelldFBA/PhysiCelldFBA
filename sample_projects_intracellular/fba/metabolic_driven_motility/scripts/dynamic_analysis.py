@@ -125,7 +125,7 @@ _CELL_COLS = [
     "growth_rate",               # dFBA-derived (h⁻¹)
     "atp_flux",                  # mmol·gDW⁻¹·h⁻¹
     "motility_atp_flux",
-    "glucose_flux",
+    "R_EX_glc__D_e",
 ]
 
 
@@ -190,7 +190,7 @@ def load_cell_aggregate_timeseries(reader: multicellds.MultiCellDS) -> pd.DataFr
         a   = _ensure_rows(a, len(cols))
         row = {"time": t / 60.0, "n_cells": a.shape[0]}
         for c in ["migration_speed", "growth_rate", "atp_flux",
-                  "motility_atp_flux", "glucose_flux"]:
+                  "motility_atp_flux", "R_EX_glc__D_e"]:
             if c in name2idx:
                 row[c] = a[:, name2idx[c]].mean()
         data.append(row)
@@ -244,7 +244,7 @@ def plot_population_dynamics(df: pd.DataFrame, out_path: str) -> None:
 
     axes[2].plot(df.index, df["atp_flux"],          color="#3182bd", label="Total ATP flux")
     axes[2].plot(df.index, df["motility_atp_flux"],  color="#9ecae1", label="Motility ATP flux")
-    axes[2].plot(df.index, df["glucose_flux"].abs(), color="#756bb1", label="|Glucose flux|",
+    axes[2].plot(df.index, df["R_EX_glc__D_e"].abs(), color="#756bb1", label="|Glucose flux|",
                  linestyle="--")
     axes[2].set_ylabel("Flux\n(mmol·gDW⁻¹·h⁻¹)")
     axes[2].set_xlabel("Time (h)")

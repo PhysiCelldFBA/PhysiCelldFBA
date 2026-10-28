@@ -153,7 +153,7 @@ def load_aggregate_timeseries(reader: multicellds.MultiCellDS) -> pd.DataFrame:
     name2idx = {n: i for i, n in enumerate(cols)}
 
     required = ["x_position", "y_position", "migration_speed", "growth_rate",
-                "atp_flux", "motility_atp_flux", "glucose_flux"]
+                "atp_flux", "motility_atp_flux", "R_EX_glc__D_e"]
     missing = [c for c in required if c not in name2idx]
     if missing:
         raise ValueError(f"Missing required cell columns: {missing}\nAvailable: {cols}")
@@ -170,7 +170,7 @@ def load_aggregate_timeseries(reader: multicellds.MultiCellDS) -> pd.DataFrame:
             "growth_rate": float(np.mean(a[:, name2idx["growth_rate"]])),
             "atp_flux": float(np.mean(a[:, name2idx["atp_flux"]])),
             "motility_atp_flux": float(np.mean(a[:, name2idx["motility_atp_flux"]])),
-            "glucose_flux": float(np.mean(a[:, name2idx["glucose_flux"]])),
+            "R_EX_glc__D_e": float(np.mean(a[:, name2idx["R_EX_glc__D_e"]])),
         }
         rows.append(row)
     if not rows:
@@ -676,7 +676,7 @@ def plot_representative_figure(
     # Determine shared y-limits for line rows.
     max_speed = max(float(s.df["migration_speed"].max()) for s in scenarios)
     max_growth = max(float(s.df["growth_rate"].max()) for s in scenarios)
-    max_flux = max(float(max(s.df["atp_flux"].max(), s.df["motility_atp_flux"].max(), s.df["glucose_flux"].abs().max())) for s in scenarios)
+    max_flux = max(float(max(s.df["atp_flux"].max(), s.df["motility_atp_flux"].max(), s.df["R_EX_glc__D_e"].abs().max())) for s in scenarios)
     max_t = max(float(s.df["time_h"].max()) for s in scenarios)
 
     speed_ylim = (0, max(0.05, max_speed * 1.08))
@@ -721,7 +721,7 @@ def plot_representative_figure(
         ax = axes_flux[c]
         ax.plot(t, df["atp_flux"], color=flux_colors["atp"], label="Total ATP flux")
         ax.plot(t, df["motility_atp_flux"], color=flux_colors["mot_atp"], label="Motility ATP flux")
-        ax.plot(t, df["glucose_flux"].abs(), color=flux_colors["glucose"], linestyle="--", label="|Glucose flux|")
+        ax.plot(t, df["R_EX_glc__D_e"].abs(), color=flux_colors["glucose"], linestyle="--", label="|Glucose flux|")
         ax.set_ylim(flux_ylim)
         ax.set_xlim(0, max_t)
         ax.set_xlabel("Time (h)")

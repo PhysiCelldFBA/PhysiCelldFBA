@@ -71,6 +71,7 @@
 #endif
 #include "custom.h"
 #include <unordered_set>
+#include <set>   // for the one-time warning in set_custom_data
 
 
 // Prefer per-cell custom_data trait; fall back to global user_parameter if unset/non-positive.
@@ -386,6 +387,36 @@ void setup_tissue(void)
 	return; 
 }
 
+// ---------------------------------------------------------------------------
+// pCell->custom_data[name] = value resolves an undeclared name to index 0 via
+// Custom_Cell_Data::operator[]'s underlying map, silently clobbering whatever
+// the first declared custom_data variable is instead of failing. This helper
+// looks the name up first and skips the write (once-per-name warning) if the
+// name is not declared in the XML cell definition.
+//
+// The report is guarded because this runs on the OpenMP-parallel update path.
+// ---------------------------------------------------------------------------
+static void set_custom_data(PhysiCell::Cell* pCell, const std::string& name, double value)
+{
+	const int index = pCell->custom_data.find_variable_index(name);
+	if (index < 0)
+	{
+		static std::set<std::string> reported;
+		#pragma omp critical(dfba_custom_data_warn)
+		{
+			if (reported.insert(name).second)
+			{
+				std::cout << "WARNING: custom_data variable \"" << name
+				          << "\" is written from custom.cpp but not declared in the"
+				          << " XML cell definition; the write is being skipped."
+				          << std::endl;
+			}
+		}
+		return;
+	}
+	pCell->custom_data[index] = value;
+}
+
 void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt )
 {
 #ifdef ADDON_PHYSIDFBA
@@ -422,21 +453,30 @@ void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phe
 			for (int i = 0; i < (int)phenotype.secretion.net_export_rates.size(); i++)
 				phenotype.secretion.net_export_rates[i] = 0.0;
 
-			pCell->custom_data["growth_rate"] = 0.0;
-			pCell->custom_data["oxygen_flux"] = 0.0;
-			pCell->custom_data["glucose_flux"] = 0.0;
-			pCell->custom_data["acetate_flux"] = 0.0;
-			pCell->custom_data["co2_flux"] = 0.0;
+			set_custom_data(pCell, "growth_rate", 0.0);
+			for (const auto& exchange : dfba->substrate_exchanges)
+			{
+				const std::string& id = exchange.second.fba_flux_id;
+				set_custom_data(pCell, id, 0.0);
+				set_custom_data(pCell, id + "_lb", 0.0);
+			}
 			return;
 		}
 	}
 #endif
 
-	pCell->custom_data["growth_rate"] = pCell->phenotype.intracellular->get_growth_rate();
-	pCell->custom_data["oxygen_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_o2_e");
-	pCell->custom_data["glucose_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_glc__D_e");
-	pCell->custom_data["acetate_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_ac_e");
-	pCell->custom_data["co2_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_co2_e");
+	PhysiCelldFBA::dFBAIntracellular* dfba_model = static_cast<PhysiCelldFBA::dFBAIntracellular*>(phenotype.intracellular);
+
+	set_custom_data(pCell, "growth_rate", dfba_model->get_growth_rate());
+
+	// Per exchange, record the realised flux and the lower bound that constrained it,
+	// under the SBML reaction id (R_EX_*, R_EX_*_lb), as in the other use cases.
+	for (const auto& exchange : dfba_model->substrate_exchanges)
+	{
+		const std::string& id = exchange.second.fba_flux_id;
+		set_custom_data(pCell, id, dfba_model->get_flux_value(id));
+		set_custom_data(pCell, id + "_lb", dfba_model->sbml_model.getReactionLowerBound(id));
+	}
 	return;
 }
 

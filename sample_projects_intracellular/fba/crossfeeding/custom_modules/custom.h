@@ -73,6 +73,8 @@
 
 #include "../core/PhysiCell.h"
 #include "../modules/PhysiCell_standard_modules.h" 
+#include "../addons/dFBA/src/dfba_intracellular.h"
+#include "../addons/dFBA/src/dfba_Model.h"
 
 using namespace BioFVM; 
 using namespace PhysiCell;
@@ -98,11 +100,9 @@ void apply_initial_glucose_refeed_setup(void);
 void apply_glucose_dirichlet_refeed_schedule(void);
 
 void pre_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt );
+// Generic for every cell type: each cell only has its own species' model in
+// substrate_exchanges, so one function covers c_beijerinckii and m_barkeri alike.
 void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt );
-
-// Cell-type specific intracellular update functions
-void post_update_intracellular_c_beijerinckii(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt );
-void post_update_intracellular_m_barkeri(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt );
 
 std::vector<std::string> my_coloring_function( Cell* );
 

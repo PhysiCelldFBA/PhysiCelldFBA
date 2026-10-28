@@ -102,14 +102,17 @@ def get_xml_cell_indices(output_dir: str) -> dict:
 
 
 def get_xml_column_index(output_dir: str, column_name: str) -> int | None:
-    old_to_new = {
-        'hydrogen_flux': ['CB_h2_flux', 'hydrogen_flux'],
-        'h2_flux': ['MB_h2_flux', 'h2_flux'],
-        'acetate_flux': ['MB_acetate_flux', 'CB_acetate_flux', 'acetate_flux'],
-        'CB_co2_flux': ['CB_co2_flux', 'co2_flux'],
-        'MB_co2_flux': ['MB_co2_flux', 'co2_flux'],
+    # column_name is now the bare R_EX_* id (config.KEY_FLUXES_CB/MB); try that first,
+    # then fall back to the various pre-homogenization names so CSVs/outputs generated
+    # before this rename can still be read.
+    aliases = {
+        'R_EX_glc_D_e': ['R_EX_glc_D_e', 'glucose_flux'],
+        'R_EX_h2_e': ['R_EX_h2_e', 'CB_h2_flux', 'MB_h2_flux', 'hydrogen_flux', 'h2_flux'],
+        'R_EX_co2_e': ['R_EX_co2_e', 'CB_co2_flux', 'MB_co2_flux', 'co2_flux'],
+        'R_EX_ac_e': ['R_EX_ac_e', 'CB_acetate_flux', 'MB_acetate_flux', 'acetate_flux'],
+        'R_EX_ch4_e': ['R_EX_ch4_e', 'methane_flux', 'ch4_flux'],
     }
-    search_names = list(old_to_new.get(column_name, [column_name]))
+    search_names = list(aliases.get(column_name, [column_name]))
     if column_name in ('methane_flux', 'ch4_flux'):
         search_names.extend(['ch4_flux', 'methane_flux'])
     search_names = list(dict.fromkeys(search_names))

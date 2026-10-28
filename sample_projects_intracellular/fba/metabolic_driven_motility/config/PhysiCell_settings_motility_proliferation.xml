@@ -324,10 +324,6 @@
                 </intracellular>
             </phenotype>
             <custom_data>
-                <oxygen_flux conserved="false" units="mM/min" description="">0.0</oxygen_flux>
-                <glucose_flux conserved="false" units="mM/min" description="">0.0</glucose_flux>
-                <acetate_flux conserved="false" units="mM/min" description="">0.0</acetate_flux>
-                <co2_flux conserved="false" units="mM/min" description="">0.0</co2_flux>
                 <growth_rate conserved="false" units="1/min" description="">0.0</growth_rate>
                 <growth_factor conserved="false" units="1/min" description="">0.0</growth_factor>
                 <R_EX_glc__D_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_glc__D_e>

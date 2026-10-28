@@ -211,14 +211,14 @@ void create_cell_types(void)
 	Cell_Definition* c_beijerinckii = find_cell_definition( "c_beijerinckii");
 	//  This sets the pre and post intracellular update functions for C. beijerinckii
 	c_beijerinckii->functions.pre_update_intracellular =  NULL;
-	c_beijerinckii->functions.post_update_intracellular = post_update_intracellular_c_beijerinckii;
+	c_beijerinckii->functions.post_update_intracellular = post_update_intracellular;
 	c_beijerinckii->functions.update_phenotype = NULL; 
 	c_beijerinckii->functions.volume_update_function = NULL;
 
 	Cell_Definition* m_barkeri = find_cell_definition( "m_barkeri");
 	//  This sets the pre and post intracellular update functions for M. barkeri
 	m_barkeri->functions.pre_update_intracellular =  NULL;
-	m_barkeri->functions.post_update_intracellular = post_update_intracellular_m_barkeri;
+	m_barkeri->functions.post_update_intracellular = post_update_intracellular;
 	m_barkeri->functions.update_phenotype = NULL; 
 	m_barkeri->functions.volume_update_function = NULL;
 
@@ -314,153 +314,48 @@ void setup_tissue(void)
 	return; 
 }
 
-// Cell-type specific intracellular update function for C. beijerinckii
-void post_update_intracellular_c_beijerinckii(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt) {
-	// Keep a unified output schema across cell types (as declared in PhysiCell_settings_experiment_2.xml)
-	// by always populating the same custom_data keys. For this type, MB_* keys are set to 0.
-	pCell->custom_data["MB_h2_flux"] = 0.0;
-	pCell->custom_data["MB_co2_flux"] = 0.0;
-	pCell->custom_data["MB_acetate_flux"] = 0.0;
-	pCell->custom_data["MB_growth_rate"] = 0.0;
-	pCell->custom_data["MB_fba_infeasible"] = 0.0;
-	pCell->custom_data["methane_flux"] = 0.0;
-	
-	// Debug: Print growth rate and biomass flux for early timepoints
-	if (PhysiCell_globals.current_time < 2.0) {
-		double biomass_flux = 0.0;
-		try {
-			if (pCell->phenotype.intracellular)
-			{
-				biomass_flux = pCell->phenotype.intracellular->get_flux_value("R_biomass");
-			}
-		} catch (const std::exception& e) {
-			std::cout << "Error getting biomass flux for c_beijerinckii: " << e.what() << std::endl;
-		}
-		
-		// std::cout << "Time: " << PhysiCell_globals.current_time 
-				//   << ", C. beijerinckii ID: " << pCell->ID 
-				//   << ", Growth rate: " << pCell->custom_data["growth_rate"] 
-				//   << ", Biomass flux: " << biomass_flux << std::endl;
-	}
-	
-	// Set metabolic fluxes specific to C. beijerinckii
-	try {
-		if (pCell->phenotype.intracellular)
-		{
-			// Transport model in exp2.xml (C. beijerinckii):
-			// glucose: R_EX_glc_D_e, H2: R_EX_h2_e, CO2: R_EX_co2_e, acetate: R_EX_ac_e
-			pCell->custom_data["glucose_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_glc_D_e");
-			pCell->custom_data["CB_h2_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_h2_e");
-			pCell->custom_data["CB_co2_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_co2_e");
-			pCell->custom_data["CB_acetate_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_ac_e");
-			pCell->custom_data["CB_growth_rate"] = pCell->phenotype.intracellular->get_growth_rate();
-			pCell->custom_data["CB_fba_infeasible"] = get_dfba_infeasible_flag_for_cell(pCell);
-		}
-		else
-		{
-			pCell->custom_data["glucose_flux"] = 0.0;
-			pCell->custom_data["CB_h2_flux"] = 0.0;
-			pCell->custom_data["CB_co2_flux"] = 0.0;
-			pCell->custom_data["CB_acetate_flux"] = 0.0;
-			pCell->custom_data["CB_growth_rate"] = 0.0;
-			pCell->custom_data["CB_fba_infeasible"] = 0.0;
-		}
-		
-		// Debug fluxes for early timepoints (commented out for performance)
-		// if (PhysiCell_globals.current_time < 5.0) {
-		// 	std::cout << "C.beijerinckii ID " << pCell->ID 
-		// 			  << ": Glucose=" << pCell->custom_data["glucose_flux"] 
-		// 			  << ", H2=" << pCell->custom_data["CB_h2_flux"] << std::endl;
-		// }
-	} catch (const std::exception& e) {
-		std::cout << "Error accessing flux values for c_beijerinckii: " << e.what() << std::endl;
-	}
-	
-	return;
-}
-
-// Cell-type specific intracellular update function for M. barkeri
-void post_update_intracellular_m_barkeri(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt) {
-	// Keep unified output schema. For this type, CB_* keys are set to 0.
-	pCell->custom_data["glucose_flux"] = 0.0;
-	pCell->custom_data["CB_h2_flux"] = 0.0;
-	pCell->custom_data["CB_co2_flux"] = 0.0;
-	pCell->custom_data["CB_acetate_flux"] = 0.0;
-	pCell->custom_data["CB_growth_rate"] = 0.0;
-	pCell->custom_data["CB_fba_infeasible"] = 0.0;
-	
-	// Debug: Print growth rate and biomass flux for early timepoints
-	if (PhysiCell_globals.current_time < 2.0) {
-		double biomass_flux = 0.0;
-		try {
-			// SBML objective / biomass reaction for M. barkeri
-			if (pCell->phenotype.intracellular)
-			{
-				biomass_flux = pCell->phenotype.intracellular->get_flux_value("R_Mb_biomass_65");
-			}
-		} catch (const std::exception& e) {
-			std::cout << "Error getting biomass flux for m_barkeri: " << e.what() << std::endl;
-		}
-		
-		// std::cout << "Time: " << PhysiCell_globals.current_time 
-		// 		  << ", M. barkeri ID: " << pCell->ID 
-		// 		  << ", Growth rate: " << pCell->custom_data["growth_rate"] 
-		// 		  << ", Biomass flux: " << biomass_flux << std::endl;
-	}
-	
-	// Set metabolic fluxes specific to M. barkeri
-	try {
-		if (pCell->phenotype.intracellular)
-		{
-			// Transport model in exp2.xml (M. barkeri):
-			// CO2: R_EX_co2_e, H2: R_EX_h2_e, methane: R_EX_ch4_e, acetate: R_EX_ac_e
-			pCell->custom_data["MB_h2_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_h2_e");
-			pCell->custom_data["MB_co2_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_co2_e");
-			pCell->custom_data["MB_acetate_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_ac_e");
-			pCell->custom_data["methane_flux"] = pCell->phenotype.intracellular->get_flux_value("R_EX_ch4_e");
-			pCell->custom_data["MB_growth_rate"] = pCell->phenotype.intracellular->get_growth_rate();
-			pCell->custom_data["MB_fba_infeasible"] = get_dfba_infeasible_flag_for_cell(pCell);
-		}
-		else
-		{
-			pCell->custom_data["MB_h2_flux"] = 0.0;
-			pCell->custom_data["MB_co2_flux"] = 0.0;
-			pCell->custom_data["MB_acetate_flux"] = 0.0;
-			pCell->custom_data["methane_flux"] = 0.0;
-			pCell->custom_data["MB_growth_rate"] = 0.0;
-			pCell->custom_data["MB_fba_infeasible"] = 0.0;
-		}
-		
-		// Debug fluxes for early timepoints (commented out for performance)
-		// if (PhysiCell_globals.current_time < 10.0) {
-		// 	std::cout << "M.barkeri ID " << pCell->ID 
-		// 			  << ": H2=" << pCell->custom_data["MB_h2_flux"]
-		// 			  << ", CO2=" << pCell->custom_data["MB_co2_flux"]
-		// 			  << ", CH4=" << pCell->custom_data["methane_flux"] << std::endl;
-		// }
-	} catch (const std::exception& e) {
-		std::cout << "Error accessing flux values for m_barkeri: " << e.what() << std::endl;
-	}
-	
-	return;
-}
-
-// Generic post_update_intracellular function that dispatches to cell-type specific functions
+// Generic post_update_intracellular, identical for every cell type.
+//
+// Each cell only has its own species' model in substrate_exchanges (C. beijerinckii:
+// R_EX_glc_D_e, R_EX_h2_e, R_EX_nh4_e, R_EX_pi_e, R_EX_so4_e, R_EX_ac_e, R_EX_co2_e;
+// M. barkeri: R_EX_co2_e, R_EX_h2_e, R_EX_ch4_e, R_EX_nh4_e, R_EX_pi_e, R_EX_ac_e), so
+// writing bare R_EX_<id> ids needs no CB_/MB_ prefix to avoid cross-talk: a field that
+// is not one of this cell's own exchanges (e.g. R_EX_glc_D_e on an m_barkeri cell)
+// is simply never touched and stays at its declared XML default of 0.0. Cell type is
+// already recorded elsewhere in the MultiCellDS output, so no per-type branching is
+// needed here any more (the previous per-type dispatch is what the CB_*/MB_* prefixes
+// and manual zeroing used to paper over).
 void post_update_intracellular(PhysiCell::Cell* pCell, PhysiCell::Phenotype& phenotype, double dt) {
-	// Dispatch to the appropriate cell-type specific function
-	if (pCell->type_name == "c_beijerinckii") {
-		post_update_intracellular_c_beijerinckii(pCell, phenotype, dt);
-	} else if (pCell->type_name == "m_barkeri") {
-		post_update_intracellular_m_barkeri(pCell, phenotype, dt);
-	} else {
-		// Default behavior for unknown cell types.
-		// Deliberately records nothing: there is no per-type custom_data variable
-		// for an unknown type, and the previous write to an undeclared
-		// "growth_rate" resolved to variables[0] and overwrote glucose_flux.
-		std::cout << "Warning: Unknown cell type '" << pCell->type_name 
-				  << "' in post_update_intracellular" << std::endl;
+
+	if (!pCell->phenotype.intracellular)
+	{
+		set_custom_data(pCell, "growth_rate", 0.0);
+		set_custom_data(pCell, "fba_infeasible", 0.0);
+		return;
 	}
-	
+
+	auto* dfba_model = static_cast<PhysiCelldFBA::dFBAIntracellular*>(pCell->phenotype.intracellular);
+
+	try
+	{
+		set_custom_data(pCell, "growth_rate", dfba_model->get_growth_rate());
+		set_custom_data(pCell, "fba_infeasible", get_dfba_infeasible_flag_for_cell(pCell));
+
+		// Per exchange, record the realised flux and the lower bound that constrained it,
+		// under the SBML reaction id (R_EX_*, R_EX_*_lb), as in the other use cases.
+		for (const auto& exchange : dfba_model->substrate_exchanges)
+		{
+			const std::string& id = exchange.second.fba_flux_id;
+			set_custom_data(pCell, id, dfba_model->get_flux_value(id));
+			set_custom_data(pCell, id + "_lb", dfba_model->sbml_model.getReactionLowerBound(id));
+		}
+	}
+	catch (const std::exception& e)
+	{
+		std::cout << "Error accessing flux values for cell type '" << pCell->type_name
+		          << "': " << e.what() << std::endl;
+	}
+
 	return;
 }
 

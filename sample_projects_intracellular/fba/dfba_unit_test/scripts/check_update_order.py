@@ -28,7 +28,7 @@ def load(d):
         names = [v.get('name') for v in r.findall('.//microenvironment/domain/variables/variable')]
         typ = c[lab['cell_type']].astype(int)
         cells = {k: {int(T): np.sort(c[lab[k], typ == T]) for T in np.unique(typ)}
-                 for k in ('oxygen_flux', 'glucose_flux', 'growth_rate', 'total_volume')}
+                 for k in ('R_EX_o2_e', 'R_EX_glc__D_e', 'growth_rate', 'total_volume')}
         snaps.append((cells, {n: mm[4 + i] for i, n in enumerate(names)}))
     return snaps
 

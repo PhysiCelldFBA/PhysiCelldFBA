@@ -65,7 +65,9 @@ The `figures/` directory is **gitignored** — regenerate it locally with
 
 - **`pctk` import error** — install pctk (see above).
 - **Missing flux columns** — recompile the project with the crossfeeding
-  `custom_modules/custom.cpp` that writes `CB_h2_flux`, `MB_h2_flux`, etc.
+  `custom_modules/custom.cpp` that writes `R_EX_h2_e`, `R_EX_co2_e`, etc.
+  (older runs may still have the pre-homogenization `CB_h2_flux`/`MB_h2_flux`
+  columns, which the loader scripts still recognise as a fallback).
 - **Empty microenvironment** — verify `--output-dir` points to a complete
   simulation output, not just `initial.*` files.
 - **Missing `.mat` snapshot** — if pctk prints `cannot read mat file ...`, that
