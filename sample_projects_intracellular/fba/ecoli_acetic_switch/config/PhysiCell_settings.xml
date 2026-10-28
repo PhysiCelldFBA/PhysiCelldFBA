@@ -14,11 +14,11 @@
         <x_max>350.0</x_max>
         <y_min>-350.0</y_min>
         <y_max>350.0</y_max>
-        <z_min>-1.5</z_min>
-        <z_max>1.5</z_max>
-        <dx>1.0</dx>
-        <dy>1.0</dy>
-        <dz>1.0</dz>
+        <z_min>-1.0</z_min>
+        <z_max>1.0</z_max>
+        <dx>2.0</dx>
+        <dy>2.0</dy>
+        <dz>2.0</dz>
         <use_2D>true</use_2D>
     </domain>
 
@@ -26,23 +26,23 @@
         <max_time units="min">600</max_time>
         <time_units>min</time_units>
         <space_units>micron</space_units>
-        <dt_diffusion units="min">0.01</dt_diffusion>
-        <dt_mechanics units="min">0.1</dt_mechanics>
-        <dt_phenotype units="min">6</dt_phenotype>
+        <dt_diffusion units="min">0.001</dt_diffusion>
+        <dt_mechanics units="min">0.001</dt_mechanics>
+        <dt_phenotype units="min">0.001</dt_phenotype>
     </overall>
 
     <parallel>
-        <omp_num_threads>112</omp_num_threads>
+        <omp_num_threads>3</omp_num_threads>
     </parallel>
 
     <save>
         <folder>output</folder>
         <full_data>
-            <interval units="min">1</interval>
+            <interval units="min">5</interval>
             <enable>true</enable>
         </full_data>
         <SVG>
-            <interval units="min">1</interval>
+            <interval units="min">10</interval>
             <enable>true</enable>
             <plot_substrate enabled="true" limits="false">
                 <substrate>oxygen</substrate>
@@ -286,7 +286,7 @@
                 <intracellular type="dfba">
                     <settings>
                         <sbml_filename>config/Ecoli_core.xml</sbml_filename>
-                        <intracellular_dt units="min">0.01</intracellular_dt>
+                        <intracellular_dt units="min">0.001</intracellular_dt>
                     </settings>
                     <transport_model>
                         <exchange substrate="glucose">
@@ -331,6 +331,14 @@
                 <co2_flux conserved="false" units="mM/min" description="">0.0</co2_flux>
                 <growth_rate conserved="false" units="1/min" description="">0.0</growth_rate>
                 <growth_factor conserved="false" units="1/min" description="">0.0</growth_factor>
+                <R_EX_glc__D_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_glc__D_e>
+                <R_EX_glc__D_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied to R_EX_glc__D_e">0.0</R_EX_glc__D_e_lb>
+                <R_EX_ac_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_ac_e>
+                <R_EX_ac_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied to R_EX_ac_e">0.0</R_EX_ac_e_lb>
+                <R_EX_o2_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_o2_e>
+                <R_EX_o2_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied to R_EX_o2_e">0.0</R_EX_o2_e_lb>
+                <R_EX_co2_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_co2_e>
+                <R_EX_co2_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied to R_EX_co2_e">0.0</R_EX_co2_e_lb>
             </custom_data>
             <initial_parameter_distributions enabled="false">
           </initial_parameter_distributions>

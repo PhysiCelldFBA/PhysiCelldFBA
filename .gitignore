@@ -27,11 +27,10 @@ user_projects/*
 Studio.zip
 /studio
 
-output/*.svg
-output/*.xml
-output/*.mat
-output/*.txt
-output/cells.csv
+# simulation output folders (output/, output_pfba/, output_motility/, ...);
+# the reference outputs under tests/ stay trackable
+output*/
+!/tests/**/output*/
 
 **/.ipynb_checkpoints/
 

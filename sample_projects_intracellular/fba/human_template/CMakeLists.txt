@@ -1,4 +1,4 @@
-get_filename_component(project ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+set(project "human-template")
 add_executable(${project})
 
 file(GLOB MODULES "custom_modules/*.cpp")

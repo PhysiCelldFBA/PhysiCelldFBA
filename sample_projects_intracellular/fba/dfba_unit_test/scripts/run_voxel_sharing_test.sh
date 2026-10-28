@@ -15,7 +15,7 @@ for c in n1 n4 n8 mixed; do
         mv "$out" "${out}_$(date +%Y%m%d_%H%M%S)"
     fi
     mkdir -p "$out"
-    "$BIN" config/Unit_test_voxel_sharing_$c.xml > "$out.log" 2>&1 \
+    "$BIN" config/voxel_sharing_test/Unit_test_voxel_sharing_$c.xml > "$out.log" 2>&1 \
         || { echo "simulation failed for $c, see $out.log"; rc=2; continue; }
     $PY scripts/check_voxel_nonnegative.py "$out" || { [ $rc -ne 0 ] || rc=1; }
 done

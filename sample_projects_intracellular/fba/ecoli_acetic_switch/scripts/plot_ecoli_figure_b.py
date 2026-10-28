@@ -10,9 +10,9 @@ Layout: 2 rows × 3 columns
 
 Styling: "cell-systems" look matching the project's existing plot suite.
 
-Default run uses the same PhysiCell output as Figure A
-(``Ecoli_static_ox_glc_job34054344``). If a timepoint has no saved frame within
-10 min of target, that panel is left empty with a note.
+Pass ``--output-folder`` with the same PhysiCell simulation output used for Figure A.
+If a timepoint has no saved frame within 10 min of target, that panel is left empty
+with a note.
 """
 
 import argparse
@@ -35,24 +35,6 @@ import xml.etree.ElementTree as ET
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-def _default_ecoli_output_folder() -> str:
-    """Same discovery order as ``plot_ecoli_figure_a``."""
-    candidates = [
-        _REPO_ROOT
-        / 'PhysiCelldFBA/marco_outputs/ecoli/ecoli/Ecoli_static_ox_glc_job34054344/output',
-        _REPO_ROOT
-        / 'mn5sync_pdfba/marco_outputs/ecoli/ecoli/Ecoli_static_ox_glc_job34054344/output',
-        _REPO_ROOT
-        / 'mn5sync_pdfba/marco_outputs/ecoli/ecoli/Ecoli_acetate_switch_paper'
-        / 'Ecoli_static_ox_glc_job37998445/output',
-    ]
-    for p in candidates:
-        if p.is_dir() and any(p.glob('output*.xml')):
-            return str(p)
-    return str(candidates[0])
-
-
-OUTPUT_FOLDER = _default_ecoli_output_folder()
 RESULTS_DIR = str(_REPO_ROOT / 'analysis/results/ecoli')
 
 # ── timepoints and substrates ─────────────────────────────────────────────────
@@ -358,8 +340,6 @@ def _infer_sample_tag(output_folder: str) -> str:
 def _resolve_results_dir(output_folder: str, results_dir_arg: Optional[str]) -> str:
     if results_dir_arg is not None:
         return results_dir_arg
-    if os.path.abspath(output_folder) == os.path.abspath(OUTPUT_FOLDER):
-        return RESULTS_DIR
     return os.path.join(RESULTS_DIR, _infer_sample_tag(output_folder))
 
 
@@ -368,19 +348,19 @@ def main():
     ap = argparse.ArgumentParser(description='E. coli acetate-switch Figure B (spatial panels).')
     ap.add_argument(
         '--output-folder',
-        default=None,
+        required=True,
         metavar='DIR',
-        help='PhysiCell output directory (contains output*.xml). '
-             'Default: same as Figure A (PhysiCelldFBA or mn5sync_pdfba job34054344, then fallback).',
+        help='PhysiCell output directory to analyze (contains output*.xml); same run used for Figure A.',
     )
     ap.add_argument(
         '--results-dir',
         default=None,
         metavar='DIR',
-        help='Where to write figure_B.png/svg. Default: analysis/results/ecoli, or a subfolder named after the sample when --output-folder differs from the default.',
+        help='Where to write figure_B.png/svg. Default: analysis/results/ecoli/<sample-tag>, '
+             'where <sample-tag> is derived from --output-folder.',
     )
     args = ap.parse_args()
-    out_folder = args.output_folder or OUTPUT_FOLDER
+    out_folder = args.output_folder
     results_dir = _resolve_results_dir(out_folder, args.results_dir)
     os.makedirs(results_dir, exist_ok=True)
 

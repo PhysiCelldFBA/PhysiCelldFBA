@@ -40,7 +40,7 @@ from pctk import multicellds
 # ---------------------------------------------------------------------------
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _REPO_ROOT   = _SCRIPT_DIR.parent
-DEFAULT_OUTPUT_DIR  = str(_REPO_ROOT / "output")
+DEFAULT_OUTPUT_DIR  = str(_REPO_ROOT / "output_motility_prolif")
 DEFAULT_RESULTS_DIR = str(_REPO_ROOT / "results" / "dynamics_analysis")
 
 # Microenvironment substrate column indices (0-2 = x/y/z; 3 = voxel vol; 4+ = substrates)

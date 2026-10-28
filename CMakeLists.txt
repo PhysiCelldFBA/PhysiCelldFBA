@@ -59,7 +59,7 @@ endif()
 # dFBA addon and related sample projects
 if(PHYSICELL_BUILD_DFBA)
   add_subdirectory(addons/dFBA)
-  add_subdirectory(sample_projects_intracellular/fba/cancer_metabolism)
+  add_subdirectory(sample_projects_intracellular/fba/human_template)
   # broken target - can not compile
   # add_subdirectory(sample_projects_intracellular/fba/ecoli_acetic_switch)
 endif()

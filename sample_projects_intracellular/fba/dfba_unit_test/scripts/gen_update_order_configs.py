@@ -3,14 +3,14 @@
 created in different orders (the row order of the cell CSV is the order of all_cells), each at 1 and 4 threads.
 
 types: A 1.3 um3, Vmax glc 8 | B 2.6 um3, 8 | C 1.3 um3, 24 | N 1.3 um3, 0 (cannot take glucose); three cells of each type.
-Base: config/Unit_test_voxel_sharing_mixed.xml (isolated voxels for glucose, 0.165 mM, dt 0.01 min, 0.1 min).
+Base: config/voxel_sharing_test/Unit_test_voxel_sharing_mixed.xml (isolated voxels for glucose, 0.165 mM, dt 0.01 min, 0.1 min).
 usage: gen_update_order_configs.py [config_dir] [n_random_orders] [seed]
 Writes <config_dir>/Unit_test_order_<order>_t<threads>.xml and cells_order_<order>.csv."""
 import os, random, re, sys
 cdir = sys.argv[1] if len(sys.argv) > 1 else 'config'
 nrand = int(sys.argv[2]) if len(sys.argv) > 2 else 3
 seed = int(sys.argv[3]) if len(sys.argv) > 3 else 1
-src = open(f'{cdir}/Unit_test_voxel_sharing_mixed.xml').read()
+src = open(f'{cdir}/voxel_sharing_test/Unit_test_voxel_sharing_mixed.xml').read()
 m1 = re.search(r'( *)<cell_definition name="ecoli1" ID="0">.*?</cell_definition>\n', src, re.S)
 m2 = re.search(r'( *)<cell_definition name="ecoli2" ID="1">.*?</cell_definition>\n', src, re.S)
 assert m1 and m2 and m2.start() == m1.end(), 'unexpected layout of the mixed config'

@@ -1,0 +1,79 @@
+# dFBA Configuration File
+# dFBA definition of the metabolic_driven_motility sample project, glucose K_m 0.02 mM scenario (PhysiCell_settings_motility_proliferation.xml; E. coli core model, Ecoli_core.xml).
+# Input for addons/dFBA/utils/dfba_configurator.py, which writes the substrates, the cell definition and the
+# dFBA block of the PhysiCell XML. The rest of PhysiCell_settings.xml (domain, motility, ...) is set by hand.
+#
+# Structure:
+#   substrates: List of substrate configurations for the microenvironment
+#     Each substrate contains:
+#       - name: Substrate name (must match substrate names in exchanges)
+#       - diffusion_coefficient: Diffusion coefficient (micron^2/min)
+#       - decay_rate: Decay rate (1/min)
+#       - initial_condition: Initial concentration (mM)
+#
+#   models: Dictionary of model configurations, keyed by cell definition name
+#     Each model contains:
+#       - settings: sbml_path (relative to --sbml-folder or absolute) and intracellular_dt
+#       - exchanges: List of exchange reaction configurations
+#       - growth_model: Growth model parameters
+#       - death_model: Death model configuration
+#
+
+substrates:
+  - name: "oxygen"
+    diffusion_coefficient: 100000.0  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 4  # mM
+
+  - name: "glucose"
+    diffusion_coefficient: 46800.0  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "acetate"
+    diffusion_coefficient: 72000.00  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "CO2"
+    diffusion_coefficient: 115000  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+models:
+  ecoli:
+    settings:
+      sbml_path: "Ecoli_core.xml"      # relative to --sbml-folder
+      intracellular_dt: 0.001  # min
+
+    exchanges:
+      - substrate: "glucose"
+        fba_flux: "R_EX_glc__D_e"
+        Km: 0.02      # mM
+        Vmax: 8.0    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "acetate"
+        fba_flux: "R_EX_ac_e"
+        Km: 1      # mM
+        Vmax: 5.0    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "oxygen"
+        fba_flux: "R_EX_o2_e"
+        Km: 0.002      # mM
+        Vmax: 18    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "CO2"
+        fba_flux: "R_EX_co2_e"
+        Km: 1      # mM
+        Vmax: 0.0    # mmol/gDW cell/h (as in the project XML)
+
+    growth_model:
+      cell_density: 1.04  # g/ml
+      reference_volume: 10  # pg; the XML cell definition has total volume 8 micron^3, which the configurator would set to this value
+      nuclear_volume: 0  # micron^3; 0 as in the project XML (physicell-settings rejects 0, see addons/dFBA/utils/README.md)
+      max_growth_rate: 0.86  # 1/min (units label as in the project XML)
+      objective_reaction: "R_Biomass_Ecoli_core"
+
+    death_model:
+      enabled: false
+      death_type: "necrosis"
+      death_trigger_flux: 0.0
+      death_flux_threshold: 0.0
+      death_rate_increase: 1.67e-5

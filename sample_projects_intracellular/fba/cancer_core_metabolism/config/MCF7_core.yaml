@@ -1,0 +1,251 @@
+# dFBA Configuration File
+# dFBA definition of the cancer_core_metabolism sample project (MCF7 core model, MCF7_Zielinski_2017_core_trimmed.sbml).
+# Input for addons/dFBA/utils/dfba_configurator.py, which writes the substrates, the cell definition and the
+# dFBA block of the PhysiCell XML. The rest of PhysiCell_settings.xml (domain, motility, ...) is set by hand.
+#
+# Structure:
+#   substrates: List of substrate configurations for the microenvironment
+#     Each substrate contains:
+#       - name: Substrate name (must match substrate names in exchanges)
+#       - diffusion_coefficient: Diffusion coefficient (micron^2/min)
+#       - decay_rate: Decay rate (1/min)
+#       - initial_condition: Initial concentration (mM)
+#
+#   models: Dictionary of model configurations, keyed by cell definition name
+#     Each model contains:
+#       - settings: sbml_path (relative to --sbml-folder or absolute) and intracellular_dt
+#       - exchanges: List of exchange reaction configurations
+#       - growth_model: Growth model parameters
+#       - death_model: Death model configuration
+#
+
+substrates:
+  - name: "Ammonium"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "CO2"
+    diffusion_coefficient: 115000  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "Choline"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "D-Glucose"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "Glycine"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "L-Arginine"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "L-Asparagine"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "L-Aspartate"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "L-Glutamate"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "L-Glutamine"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "L-Isoleucine"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "L-Lactate"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "L-Leucine"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "L-Lysine"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "L-Phenylalanine"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "L-Serine"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "L-Threonine"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "L-Tryptophan"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "L-Tyrosine"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "L-Valine"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "O2"
+    diffusion_coefficient: 100000  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "Ornithine"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+  - name: "Phosphate"
+    diffusion_coefficient: 8921  # micron^2/min
+    decay_rate: 0.0  # 1/min
+    initial_condition: 0.0  # mM
+
+models:
+# MCF7 breast-cancer core metabolic model (Zielinski et al. 2017, trimmed)
+  MCF7_core:
+    settings:
+      sbml_path: "MCF7_Zielinski_2017_core_trimmed.sbml"      # relative to --sbml-folder
+      intracellular_dt: 0.01  # min
+
+    exchanges:
+      - substrate: "L-Arginine"
+        fba_flux: "R_EX_arg_L_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "L-Asparagine"
+        fba_flux: "R_EX_asn_L_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "L-Aspartate"
+        fba_flux: "R_EX_asp_L_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "Choline"
+        fba_flux: "R_EX_chol_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "CO2"
+        fba_flux: "R_EX_co2_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "D-Glucose"
+        fba_flux: "R_EX_glc_e"
+        Km: 5.0      # mM
+        Vmax: 1.0    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "L-Glutamine"
+        fba_flux: "R_EX_gln_L_e"
+        Km: 1.0      # mM
+        Vmax: 0.1    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "L-Glutamate"
+        fba_flux: "R_EX_glu_L_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "Glycine"
+        fba_flux: "R_EX_gly_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "L-Isoleucine"
+        fba_flux: "R_EX_ile_L_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "L-Lactate"
+        fba_flux: "R_EX_lac_L_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "L-Leucine"
+        fba_flux: "R_EX_leu_L_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "L-Lysine"
+        fba_flux: "R_EX_lys_L_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "Ammonium"
+        fba_flux: "R_EX_nh4_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "O2"
+        fba_flux: "R_EX_o2_e"
+        Km: 0.5      # mM
+        Vmax: 1.0    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "Ornithine"
+        fba_flux: "R_EX_orn_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "L-Phenylalanine"
+        fba_flux: "R_EX_phe_L_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "Phosphate"
+        fba_flux: "R_EX_pi_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "L-Serine"
+        fba_flux: "R_EX_ser_L_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "L-Threonine"
+        fba_flux: "R_EX_thr_L_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "L-Tryptophan"
+        fba_flux: "R_EX_trp_L_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "L-Tyrosine"
+        fba_flux: "R_EX_tyr_L_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+      - substrate: "L-Valine"
+        fba_flux: "R_EX_val_L_e"
+        Km: 1.0      # mM
+        Vmax: 0.02    # mmol/gDW cell/h (as in the project XML)
+
+    growth_model:
+      cell_density: 1.04  # g/ml
+      reference_volume: 2494  # pg
+      nuclear_volume: 540  # micron^3
+      max_growth_rate: 0.026803  # 1/min (units label as in the project XML)
+      objective_reaction: "R_biomass_reaction"
+
+    death_model:
+      enabled: true
+      death_type: "necrosis"
+      death_trigger_flux: R_ATPM
+      death_flux_threshold: 1.07
+      death_rate_increase: 1.67e-07

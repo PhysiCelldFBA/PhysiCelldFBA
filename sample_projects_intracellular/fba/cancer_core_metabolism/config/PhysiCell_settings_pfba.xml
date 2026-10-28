@@ -32,10 +32,10 @@
     <dt_phenotype units="min">6</dt_phenotype>
   </overall>
   <parallel>
-    <omp_num_threads>112</omp_num_threads>
+    <omp_num_threads>6</omp_num_threads>
   </parallel>
   <save>
-    <folder>output</folder>
+    <folder>output_pfba</folder>
     <full_data>
       <interval units="min">60</interval>
       <enable>true</enable>
@@ -862,28 +862,51 @@
       <custom_data>
         <growth_rate units="1/min">0.0</growth_rate>
         <R_EX_arg_L_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_arg_L_e>
+        <R_EX_arg_L_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_arg_L_e">0.0</R_EX_arg_L_e_lb>
         <R_EX_asn_L_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_asn_L_e>
+        <R_EX_asn_L_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_asn_L_e">0.0</R_EX_asn_L_e_lb>
         <R_EX_asp_L_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_asp_L_e>
+        <R_EX_asp_L_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_asp_L_e">0.0</R_EX_asp_L_e_lb>
         <R_EX_chol_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_chol_e>
+        <R_EX_chol_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_chol_e">0.0</R_EX_chol_e_lb>
         <R_EX_co2_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_co2_e>
+        <R_EX_co2_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_co2_e">0.0</R_EX_co2_e_lb>
         <R_EX_glc_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_glc_e>
+        <R_EX_glc_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_glc_e">0.0</R_EX_glc_e_lb>
         <R_EX_gln_L_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_gln_L_e>
+        <R_EX_gln_L_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_gln_L_e">0.0</R_EX_gln_L_e_lb>
         <R_EX_glu_L_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_glu_L_e>
+        <R_EX_glu_L_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_glu_L_e">0.0</R_EX_glu_L_e_lb>
         <R_EX_gly_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_gly_e>
+        <R_EX_gly_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_gly_e">0.0</R_EX_gly_e_lb>
         <R_EX_ile_L_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_ile_L_e>
+        <R_EX_ile_L_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_ile_L_e">0.0</R_EX_ile_L_e_lb>
         <R_EX_lac_L_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_lac_L_e>
+        <R_EX_lac_L_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_lac_L_e">0.0</R_EX_lac_L_e_lb>
         <R_EX_leu_L_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_leu_L_e>
+        <R_EX_leu_L_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_leu_L_e">0.0</R_EX_leu_L_e_lb>
         <R_EX_lys_L_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_lys_L_e>
+        <R_EX_lys_L_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_lys_L_e">0.0</R_EX_lys_L_e_lb>
         <R_EX_nh4_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_nh4_e>
+        <R_EX_nh4_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_nh4_e">0.0</R_EX_nh4_e_lb>
         <R_EX_o2_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_o2_e>
+        <R_EX_o2_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_o2_e">0.0</R_EX_o2_e_lb>
         <R_EX_orn_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_orn_e>
+        <R_EX_orn_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_orn_e">0.0</R_EX_orn_e_lb>
         <R_EX_phe_L_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_phe_L_e>
+        <R_EX_phe_L_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_phe_L_e">0.0</R_EX_phe_L_e_lb>
         <R_EX_pi_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_pi_e>
+        <R_EX_pi_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_pi_e">0.0</R_EX_pi_e_lb>
         <R_EX_ser_L_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_ser_L_e>
+        <R_EX_ser_L_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_ser_L_e">0.0</R_EX_ser_L_e_lb>
         <R_EX_thr_L_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_thr_L_e>
+        <R_EX_thr_L_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_thr_L_e">0.0</R_EX_thr_L_e_lb>
         <R_EX_trp_L_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_trp_L_e>
+        <R_EX_trp_L_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_trp_L_e">0.0</R_EX_trp_L_e_lb>
         <R_EX_tyr_L_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_tyr_L_e>
+        <R_EX_tyr_L_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_tyr_L_e">0.0</R_EX_tyr_L_e_lb>
         <R_EX_val_L_e conserved="false" units="mmol/g DW cell/min" description="FBA exchange flux">0.0</R_EX_val_L_e>
+        <R_EX_val_L_e_lb conserved="false" units="mmol/g DW cell/min" description="lower bound applied to R_EX_val_L_e">0.0</R_EX_val_L_e_lb>
       </custom_data>
       <initial_parameter_distributions enabled="false">
           </initial_parameter_distributions>
