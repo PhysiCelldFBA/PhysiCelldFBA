@@ -173,6 +173,10 @@ def _domain_volume_um3(output_folder: str) -> float:
             y_max = float(domain.findtext('y_max', '0'))
             z_min = float(domain.findtext('z_min', '0'))
             z_max = float(domain.findtext('z_max', '0'))
+            # In a 2D run PhysiCell ignores z_min/z_max and uses a slab of thickness dz
+            # (modules/PhysiCell_settings.cpp), so that slab is the volume the cells share.
+            if domain.findtext('use_2D', 'false').strip().lower() == 'true':
+                z_max, z_min = 0.5 * float(domain.findtext('dz', '0')), -0.5 * float(domain.findtext('dz', '0'))
             return (x_max - x_min) * (y_max - y_min) * (z_max - z_min)
         except (TypeError, ValueError, AttributeError):
             continue
