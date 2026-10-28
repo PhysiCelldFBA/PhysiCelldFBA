@@ -58,7 +58,7 @@
     <options>
         <virtual_wall_at_domain_edge>true</virtual_wall_at_domain_edge>
         <disable_automated_spring_adhesions>false</disable_automated_spring_adhesions>
-        <random_seed>50</random_seed>
+        <random_seed>60</random_seed>
     </options>
 
     <microenvironment_setup>
@@ -353,7 +353,6 @@
     </initial_conditions>
 
     <user_parameters>
-        <random_seed type="int" units="dimensionless" description="">60</random_seed>
         <colony_radius type="double" units="micron" description="">30.0</colony_radius>
         <number_of_cells type="int" units="" description="">0</number_of_cells>
         <nutrient_reintroduction type="bool" units="dimensionless" description="">True</nutrient_reintroduction>

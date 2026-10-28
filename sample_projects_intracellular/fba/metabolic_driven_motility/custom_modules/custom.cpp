@@ -151,8 +151,6 @@ void custom_atp_optimization(PhysiCell::Cell* pCell, PhysiCell::Phenotype& pheno
 
 void create_cell_types(void)
 {
-	SeedRandom(parameters.ints("random_seed"));
-
 	initialize_default_cell_definition();
 
 	/*  This parses the cell definitions in the XML config file.  */

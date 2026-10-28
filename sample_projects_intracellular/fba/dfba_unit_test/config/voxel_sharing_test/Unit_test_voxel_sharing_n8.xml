@@ -323,6 +323,8 @@
                 <R_EX_ac_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_ac_e>
                 <R_EX_ac_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied to R_EX_ac_e">0.0</R_EX_ac_e_lb>
                 <growth_rate conserved="false" units="1/min" description="">0.0</growth_rate>
+                <R_EX_co2_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_co2_e>
+                <R_EX_co2_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied to R_EX_co2_e">0.0</R_EX_co2_e_lb>
             </custom_data>
             <initial_parameter_distributions enabled="false">
           </initial_parameter_distributions>
@@ -337,7 +339,6 @@
     </initial_conditions>
 
     <user_parameters>
-        <random_seed type="int" units="dimensionless" description="">50</random_seed>
         <colony_radius type="double" units="micron" description="">30.0</colony_radius>
         <number_of_cells type="int" units="" description="">8</number_of_cells>
     </user_parameters>
