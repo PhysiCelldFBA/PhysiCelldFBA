@@ -375,7 +375,6 @@
     </initial_conditions>
 
     <user_parameters>
-        <random_seed type="int" units="dimensionless" description="">50</random_seed>
         <colony_radius type="double" units="micron" description="">10.0</colony_radius>
         <number_of_cells type="int" units="" description="">0</number_of_cells>
     </user_parameters>

@@ -191,8 +191,6 @@ static void set_custom_data(PhysiCell::Cell* pCell, const std::string& name, dou
 
 void create_cell_types(void)
 {
-	SeedRandom(parameters.ints("random_seed"));
-
 	initialize_default_cell_definition();
 
 	/*  This parses the cell definitions in the XML config file.  */

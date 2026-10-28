@@ -326,9 +326,6 @@ def update_config_with_dfba(output_xml_path,
         created_cell_names.append(new_name)
         next_id += 1
 
-    # Add random_seed to user params
-    config.add_user_parameter("random_seed", parameter_type="int", description="Random seed for simulation", value="0")
-
     # Generate XML string to perform low-level dFBA injections
     print("[INFO] Generating intermediate XML for dFBA injection...")
     xml_str = config.generate_xml()

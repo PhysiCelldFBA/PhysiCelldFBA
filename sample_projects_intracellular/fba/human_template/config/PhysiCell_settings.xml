@@ -286,7 +286,7 @@
                 <intracellular type="dfba">
                     <settings>
                         <sbml_filename>config/Recon2.2_FBC_trimmed_final.xml</sbml_filename>
-                        <intracellular_dt units="min">6</intracellular_dt>
+                        <intracellular_dt units="min">0.01</intracellular_dt>
                     </settings>
                     <transport_model>
                         <exchange substrate="glucose">
@@ -332,6 +332,8 @@
                 <R_EX_glc_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied to R_EX_glc_e">0.0</R_EX_glc_e_lb>
                 <R_EX_lac_D_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_lac_D_e>
                 <R_EX_lac_D_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied to R_EX_lac_D_e">0.0</R_EX_lac_D_e_lb>
+                <R_EX_co2_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_co2_e>
+                <R_EX_co2_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied to R_EX_co2_e">0.0</R_EX_co2_e_lb>
             </custom_data>
             <initial_parameter_distributions enabled="false">
           </initial_parameter_distributions>
@@ -346,7 +348,6 @@
     </initial_conditions>
 
     <user_parameters>
-        <random_seed type="int" units="dimensionless" description="">50</random_seed>
         <colony_radius type="double" units="micron" description="">30.0</colony_radius>
         <number_of_cells type="int" units="" description="">0</number_of_cells>
     </user_parameters>
