@@ -447,27 +447,24 @@
                     </death_model>
                 </intracellular>
             </phenotype>
-            <custom_data> <!-- Same names/order as m_barkeri; matches custom.cpp post_update_intracellular_* -->
-                <glucose_flux conserved="false" units="mM/min" description="">0.0</glucose_flux>
-                <CB_h2_flux conserved="false" units="mM/min" description="">0.0</CB_h2_flux>
-                <CB_co2_flux conserved="false" units="mM/min" description="">0.0</CB_co2_flux>
-                <CB_acetate_flux conserved="false" units="mM/min" description="">0.0</CB_acetate_flux>
-                <CB_growth_rate conserved="false" units="1/h" description="">0.0</CB_growth_rate>
-                <CB_fba_infeasible conserved="false" units="dimensionless" description="1 if last dFBA LP was infeasible">0.0</CB_fba_infeasible>
-                <!-- M. barkeri fields (unused on this type but required for unified MultiCellDS columns) -->
-                <MB_h2_flux conserved="false" units="mM/min" description="">0.0</MB_h2_flux>
-                <MB_co2_flux conserved="false" units="mM/min" description="">0.0</MB_co2_flux>
-                <MB_acetate_flux conserved="false" units="mM/min" description="">0.0</MB_acetate_flux>
-                <MB_growth_rate conserved="false" units="1/h" description="">0.0</MB_growth_rate>
-                <MB_fba_infeasible conserved="false" units="dimensionless" description="1 if last dFBA LP was infeasible">0.0</MB_fba_infeasible>
-                <methane_flux conserved="false" units="mM/min" description="">0.0</methane_flux>
+            <custom_data> <!-- Shared field set for both cell types; post_update_intracellular only populates each cell's own exchanges, the rest stay at their default of 0.0 -->
+                <growth_rate conserved="false" units="1/h" description="">0.0</growth_rate>
+                <fba_infeasible conserved="false" units="dimensionless" description="1 if last dFBA LP was infeasible">0.0</fba_infeasible>
+                <R_EX_glc_D_e conserved="false" units="mmol/gDW/h" description="realised flux (c_beijerinckii only)">0.0</R_EX_glc_D_e>
                 <R_EX_glc_D_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_glc_D_e_lb>
+                <R_EX_h2_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_h2_e>
                 <R_EX_h2_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_h2_e_lb>
+                <R_EX_nh4_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_nh4_e>
                 <R_EX_nh4_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_nh4_e_lb>
+                <R_EX_pi_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_pi_e>
                 <R_EX_pi_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_pi_e_lb>
+                <R_EX_so4_e conserved="false" units="mmol/gDW/h" description="realised flux (c_beijerinckii only)">0.0</R_EX_so4_e>
                 <R_EX_so4_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_so4_e_lb>
+                <R_EX_ac_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_ac_e>
                 <R_EX_ac_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_ac_e_lb>
+                <R_EX_co2_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_co2_e>
                 <R_EX_co2_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_co2_e_lb>
+                <R_EX_ch4_e conserved="false" units="mmol/gDW/h" description="realised flux (m_barkeri only)">0.0</R_EX_ch4_e>
                 <R_EX_ch4_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_ch4_e_lb>
             </custom_data>
             <initial_parameter_distributions enabled="false">
@@ -703,26 +700,24 @@
                     </death_model>
                 </intracellular>
             </phenotype>
-            <custom_data> <!-- Same names/order as c_beijerinckii; matches custom.cpp post_update_intracellular_* -->
-                <glucose_flux conserved="false" units="mM/min" description="">0.0</glucose_flux>
-                <CB_h2_flux conserved="false" units="mM/min" description="">0.0</CB_h2_flux>
-                <CB_co2_flux conserved="false" units="mM/min" description="">0.0</CB_co2_flux>
-                <CB_acetate_flux conserved="false" units="mM/min" description="">0.0</CB_acetate_flux>
-                <CB_growth_rate conserved="false" units="1/h" description="">0.0</CB_growth_rate>
-                <CB_fba_infeasible conserved="false" units="dimensionless" description="1 if last dFBA LP was infeasible">0.0</CB_fba_infeasible>
-                <MB_h2_flux conserved="false" units="mM/min" description="">0.0</MB_h2_flux>
-                <MB_co2_flux conserved="false" units="mM/min" description="">0.0</MB_co2_flux>
-                <MB_acetate_flux conserved="false" units="mM/min" description="">0.0</MB_acetate_flux>
-                <MB_growth_rate conserved="false" units="1/h" description="">0.0</MB_growth_rate>
-                <MB_fba_infeasible conserved="false" units="dimensionless" description="1 if last dFBA LP was infeasible">0.0</MB_fba_infeasible>
-                <methane_flux conserved="false" units="mM/min" description="">0.0</methane_flux>
+            <custom_data> <!-- Shared field set for both cell types; post_update_intracellular only populates each cell's own exchanges, the rest stay at their default of 0.0 -->
+                <growth_rate conserved="false" units="1/h" description="">0.0</growth_rate>
+                <fba_infeasible conserved="false" units="dimensionless" description="1 if last dFBA LP was infeasible">0.0</fba_infeasible>
+                <R_EX_glc_D_e conserved="false" units="mmol/gDW/h" description="realised flux (c_beijerinckii only)">0.0</R_EX_glc_D_e>
                 <R_EX_glc_D_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_glc_D_e_lb>
+                <R_EX_h2_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_h2_e>
                 <R_EX_h2_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_h2_e_lb>
+                <R_EX_nh4_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_nh4_e>
                 <R_EX_nh4_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_nh4_e_lb>
+                <R_EX_pi_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_pi_e>
                 <R_EX_pi_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_pi_e_lb>
+                <R_EX_so4_e conserved="false" units="mmol/gDW/h" description="realised flux (c_beijerinckii only)">0.0</R_EX_so4_e>
                 <R_EX_so4_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_so4_e_lb>
+                <R_EX_ac_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_ac_e>
                 <R_EX_ac_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_ac_e_lb>
+                <R_EX_co2_e conserved="false" units="mmol/gDW/h" description="realised flux">0.0</R_EX_co2_e>
                 <R_EX_co2_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_co2_e_lb>
+                <R_EX_ch4_e conserved="false" units="mmol/gDW/h" description="realised flux (m_barkeri only)">0.0</R_EX_ch4_e>
                 <R_EX_ch4_e_lb conserved="false" units="mmol/gDW/h" description="lower bound applied in the last dFBA solve">0.0</R_EX_ch4_e_lb>
             </custom_data>
             <initial_parameter_distributions enabled="false">

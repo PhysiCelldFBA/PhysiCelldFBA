@@ -25,21 +25,20 @@ SPECIES_LINE_COLORS = {
 CELL_TYPE_CB = 0
 CELL_TYPE_MB = 1
 
-KEY_FLUXES_CB = ['glucose_flux', 'CB_h2_flux', 'CB_co2_flux', 'CB_acetate_flux']
-KEY_FLUXES_MB = ['MB_h2_flux', 'MB_acetate_flux', 'MB_co2_flux', 'methane_flux']
+# Bare R_EX_* SBML reaction ids (homogenized with the other use cases); h2/co2/acetate
+# are shared between both species, so the same id appears in both lists.
+KEY_FLUXES_CB = ['R_EX_glc_D_e', 'R_EX_h2_e', 'R_EX_co2_e', 'R_EX_ac_e']
+KEY_FLUXES_MB = ['R_EX_h2_e', 'R_EX_ac_e', 'R_EX_co2_e', 'R_EX_ch4_e']
 
 FLUX_COLORS_CB = ['#f1c232', '#4285f4', '#8e44ad', '#cc0000']
 FLUX_COLORS_MB = ['#4285f4', '#cc0000', '#8e44ad', '#2a9d8f']
 
 FLUX_DISPLAY_NAMES = {
-    'glucose_flux': 'Glucose',
-    'CB_h2_flux': 'H₂',
-    'CB_co2_flux': 'CO₂',
-    'CB_acetate_flux': 'Acetate',
-    'MB_h2_flux': 'H₂',
-    'MB_co2_flux': 'CO₂',
-    'MB_acetate_flux': 'Acetate',
-    'methane_flux': 'CH₄',
+    'R_EX_glc_D_e': 'Glucose',
+    'R_EX_h2_e': 'H₂',
+    'R_EX_co2_e': 'CO₂',
+    'R_EX_ac_e': 'Acetate',
+    'R_EX_ch4_e': 'CH₄',
 }
 
 SUBSTRATE_HEX = {

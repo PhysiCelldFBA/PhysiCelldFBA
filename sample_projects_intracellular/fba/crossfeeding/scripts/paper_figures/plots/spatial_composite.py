@@ -201,6 +201,9 @@ def plot_spatial_composite(
     x_idx = xml_idx.get('x_position', name2idx.get('x_position', 1))
     y_idx = xml_idx.get('y_position', name2idx.get('y_position', 2))
     cell_type_idx = xml_idx.get('cell_type', name2idx.get('cell_type', 5))
+    # growth_rate is now a single bare field shared by both cell types (no CB_/MB_
+    # prefix); the old prefixed names are kept as a fallback for pre-homogenization
+    # output.
     cb_gr = xml_idx.get('CB_growth_rate', name2idx.get('CB_growth_rate'))
     mb_gr = xml_idx.get('MB_growth_rate', name2idx.get('MB_growth_rate'))
     leg_gr = xml_idx.get('growth_rate', name2idx.get('growth_rate'))
