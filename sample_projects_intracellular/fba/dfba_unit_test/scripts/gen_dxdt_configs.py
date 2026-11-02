@@ -2,12 +2,15 @@
 """Write the voxel-size / time-step configs for the dx-dt test (run_dxdt_test.sh).
 
 Base: config/PhysiCell_settings.xml (one e_coli_core cell in a closed 16 um box).
-Only dx (= dy = dz), dt_diffusion and intracellular_dt (kept equal, the rule of the addon), the run length,
+Only dx (= dy = dz), dt_diffusion and intracellular_dt (kept equal except in the ratio series), the run length,
 the thread count and the output folder change. The box size does not change, so the total glucose is the same at every dx.
 
   inactive_dx<dx>_dt<dt>  : glucose 10 mM, normal diffusion. The uptake cap should not act, so the outputs must agree across dx and dt.
   capped_dx<dx>_dt<dt>    : glucose 1 mM, glucose D = 0 (the cell's voxel is an isolated pool). The cap must act at the first step and the
                             voxel is emptied, never overdrawn.
+  ratio<k>_dx<dx>_dt<dt>  : as inactive, but intracellular_dt = k * dt_diffusion (k = 2, 10 at dx 1.6, dt 0.01). The dFBA solves less
+                            often; the exchange it sets must still be applied once per window, so the outputs must agree with
+                            inactive_dx<dx>_dt<dt>.
 
 usage: gen_dxdt_configs.py <config_dir> [max_time_min]
 """
@@ -17,25 +20,26 @@ T = sys.argv[2] if len(sys.argv) > 2 else "120"
 base = open(os.path.join(cdir, "PhysiCell_settings.xml")).read()
 DX = [0.8, 1.6, 3.2]
 DT = [0.005, 0.01, 0.02]
+RATIOS = [2, 10]        # intracellular_dt / dt_diffusion of the ratio series, at dx 1.6 and dt 0.01
 
 def sub1(pat, rep, s, flags=re.S):
     out, n = re.subn(pat, rep, s, count=1, flags=flags)
     assert n == 1, pat
     return out
 
-def make(kind, dx, dt):
+def make(kind, dx, dt, k=1):
     s = base
     for t in ("dx", "dy", "dz"):
         s = sub1(rf"<{t}>[^<]*</{t}>", f"<{t}>{dx}</{t}>", s)
     s = sub1(r"(<max_time units=\"min\">)[^<]*", rf"\g<1>{T}", s)
     s = sub1(r"(<dt_diffusion units=\"min\">)[^<]*", rf"\g<1>{dt}", s)
-    s = sub1(r"<intracellular_dt>[^<]*</intracellular_dt>", f"<intracellular_dt>{dt}</intracellular_dt>", s)
+    s = sub1(r"<intracellular_dt>[^<]*</intracellular_dt>", f"<intracellular_dt>{round(dt * k, 10)}</intracellular_dt>", s)
     s = sub1(r"<omp_num_threads>[^<]*</omp_num_threads>", "<omp_num_threads>1</omp_num_threads>", s)
     s = sub1(r"(<full_data>\s*<interval units=\"min\">)[^<]*", r"\g<1>30", s)
     s = sub1(r"(<SVG>\s*<interval units=\"min\">)[^<]*", r"\g<1>30", s)
     s = sub1(r"(<SVG>\s*<interval units=\"min\">[^<]*</interval>\s*<enable>)true", r"\g<1>false", s)
     s = re.sub(r"(<settings>)", r"\g<1>\n                        <dfba_conservation_ledger>true</dfba_conservation_ledger>", s)
-    name = f"dxdt_{kind}_dx{dx}_dt{dt}"
+    name = f"dxdt_{kind}{k if kind == 'ratio' else ''}_dx{dx}_dt{dt}"
     s = sub1(r"(<save>\s*<folder>)[^<]*", rf"\g<1>output_{name}", s)
     if kind == "capped":
         s = sub1(r'(<variable name="glucose".*?<diffusion_coefficient units="micron\^2/min">)[^<]*', r"\g<1>0", s)
@@ -44,4 +48,5 @@ def make(kind, dx, dt):
     return name
 
 names = [make(k, dx, dt) for k in ("inactive", "capped") for dx in DX for dt in DT]
+names += [make("ratio", 1.6, 0.01, k) for k in RATIOS]
 print("\n".join(names))
