@@ -29,6 +29,15 @@ Figures are regenerated from a simulation output folder via
 
 - `config/sbml_models/` — the two trimmed genome-scale models, loaded via `sbml_filename`
   in `PhysiCell_settings.xml`.
+  The internal reactions of both models have the bounds of the full models (earlier versions
+  bounded each reaction to its flux range in the preparation medium, which restricted
+  *M. barkeri* in the cross-feeding medium) and the biomass reaction has no upper bound (earlier
+  versions: 0.35 per h and 0.05 per h); the ATPM bounds are those of the full models with the
+  lower bound at 0, and in the *M. barkeri* model the uptake of HCO3-, SO3, N2 and H+ is closed.
+  The reactions, stoichiometry, gene associations and objectives are the same as in the earlier
+  files. This changes the growth of *M. barkeri*: in the 30 h reference run of the manuscript its mean
+  growth rate is 1.8, 1.6 and 1.5 times higher at 10, 20 and 30 h than with the earlier files, so
+  results obtained with the earlier files are not directly comparable.
 - `config/PhysiCell_settings.xml` — simulation configuration (the only config; a byte-identical
   `PhysiCell_settings_crossfeeding.xml` duplicate was removed).
 - `config/sbml_models/yaml/crossfeeding.yaml` — dFBA definition of both species (substrates, exchanges,
