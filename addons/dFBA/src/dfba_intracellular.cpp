@@ -848,7 +848,10 @@ void dFBAIntracellular::update_dfba_outputs(PhysiCell::Cell* pCell, PhysiCell::P
         phenotype.secretion.net_export_rates[density_index] = net_export_rate_mmol_per_min;
 
         // phenotype.secretion.net_export_rates[density_index] = net_export_rate;
-        pCell->set_internal_uptake_constants(this->dfba_time_step); // Update internal uptake constants based on the new volume and rates
+        // BioFVM adds these constants to the voxel at every diffusion step until the next dFBA update, so they are built
+        // for diffusion_dt: built for dfba_time_step, each window would exchange (dfba_time_step / diffusion_dt) times
+        // the FBA flux.
+        pCell->set_internal_uptake_constants(PhysiCell::diffusion_dt); // Update internal uptake constants based on the new volume and rates
         if (default_microenvironment_options.track_internalized_substrates_in_each_agent)
         {
             phenotype.molecular.internalized_total_substrates[density_index] = 0;

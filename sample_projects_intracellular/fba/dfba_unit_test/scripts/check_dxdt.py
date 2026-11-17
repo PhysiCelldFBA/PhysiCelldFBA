@@ -14,6 +14,10 @@ Reads output_dxdt_<kind>_dx<dx>_dt<dt>/ (see gen_dxdt_configs.py, run_dxdt_test.
                               gDW = volume*(1-fluid fraction)*density*1e-12; relative difference <= tol_c (default 0.5%; measured 0.05%).
   E  model elemental balance: elemental_check.py on the model: no internal reaction elementally unbalanced
                               (C, H, N, O, P, S; run separately by run_dxdt_test.sh, N, P and S have no extracellular substrate in this test).
+  F  ratio, dFBA dt > dt    : runs with intracellular_dt = k * dt_diffusion (output_dxdt_ratio<k>_dx<dx>_dt<dt>) against the
+                              inactive run with the same dx and dt: glucose consumed, final cell volume; relative difference <= tol_rel
+                              (measured <= 0.11% for k <= 10 at 120 min). C and D apply to them as to the inactive runs: an exchange
+                              applied k times per dFBA window would fail all three.
 exit status 0 = all pass, 1 = a check failed, 2 = missing output.
 """
 import argparse, glob, os, re, sys
@@ -69,7 +73,7 @@ def snap_glucose_voxel_sum(d, which):
 
 runs = {}
 for d in sorted(glob.glob(os.path.join(a.dir, "output_dxdt_*"))):
-    m = re.match(r"output_dxdt_(inactive|capped)_dx([\d.]+)_dt([\d.]+)$", os.path.basename(d))
+    m = re.match(r"output_dxdt_(inactive|capped|ratio\d+)_dx([\d.]+)_dt([\d.]+)$", os.path.basename(d))
     if m and glob.glob(os.path.join(d, "conservation_ledger.csv")):
         runs[(m.group(1), float(m.group(2)), float(m.group(3)))] = d
 if not runs:
@@ -89,14 +93,15 @@ def nC(met): return met.elements.get("C", 0)
 Cbio = -sum(c * nC(m) for m, c in bio.metabolites.items())
 print(f"biomass reaction {bio.id}: {Cbio:.3f} mmol C per gDW (from the species formulas)")
 
+def obs(d):
+    c, t, n = cells_at(d); L = ledger(d)
+    return dict(vol=float(c["total_volume"].sum()), n=len(c["total_volume"]), mu=float(c["growth_rate"].mean()),
+                glc=-L["glucose_cells_dF"], t=t)
+
 # --- A: invariance of the inactive runs against the finest
 ina = {k: v for k, v in runs.items() if k[0] == "inactive"}
 if ina:
     ref = min(ina, key=lambda k: (k[1], k[2]))
-    def obs(d):
-        c, t, n = cells_at(d); L = ledger(d)
-        return dict(vol=float(c["total_volume"].sum()), n=len(c["total_volume"]), mu=float(c["growth_rate"].mean()),
-                    glc=-L["glucose_cells_dF"], t=t)
     O = {k: obs(d) for k, d in ina.items()}
     print(f"reference (finest): dx {ref[1]}, dt {ref[2]}: total volume {O[ref]['vol']:.5f} um^3 in {O[ref]['n']} cells, mean growth rate {O[ref]['mu']:.6g}, glucose taken {O[ref]['glc']:.5g} mM um^3 at t={O[ref]['t']}")
     for k in sorted(ina):
@@ -105,6 +110,17 @@ if ina:
         for q in ("vol", "glc"):
             rel = abs(O[k][q] / O[ref][q] - 1)
             chk(rel <= a.tol_rel, f"A inactive dx {k[1]} dt {k[2]}: {q} differs from the reference by {rel*100:.3f}% (limit {a.tol_rel*100:g}%)")
+
+# --- F: dFBA time step a multiple of the diffusion step, against the inactive run with the same dx and dt
+for k, d in sorted(runs.items()):
+    if not k[0].startswith("ratio"): continue
+    base = ("inactive", k[1], k[2])
+    if base not in runs:
+        chk(False, f"F {k[0]} dx {k[1]} dt {k[2]}: no inactive run with the same dx and dt to compare with"); continue
+    R, B = obs(d), obs(runs[base])
+    for q in ("vol", "glc"):
+        rel = abs(R[q] / B[q] - 1)
+        chk(rel <= a.tol_rel, f"F {k[0]} dx {k[1]} dt {k[2]}: {q} differs from intracellular_dt = dt by {rel*100:.3f}% (limit {a.tol_rel*100:g}%)")
 
 # --- B: capped analytic
 for k, d in sorted(runs.items()):
@@ -128,9 +144,9 @@ for k, d in sorted(runs.items()):
             r = abs(L[f"{s}_cells_resid"]) / g
             # inactive: nothing changes abruptly, the ledger closes to rounding (oxygen is 1e8 mM, so its residual is the largest, up to ~1e-6). capped: the rate changes within one step when the
             # voxel runs dry, and the applied rate lags by that step: bound by the first-order size 2*mu_max*dt.
-            lim = 1e-5 if k[0] == "inactive" else FIRST_ORDER * MU_MAX * k[2]
+            lim = FIRST_ORDER * MU_MAX * k[2] if k[0] == "capped" else 1e-5
             chk(r <= lim, f"C {k[0]} dx {k[1]} dt {k[2]}: {s} cells-window residual {r:.2e} of gross (<= {lim:.2e})")
-    if k[0] != "inactive": continue
+    if k[0] == "capped": continue
     c, t, n = cells_at(d)
     # volume at the first snapshot (cells placed with volume 1.3)
     vol0 = 1.3; ff0 = 0.75
@@ -139,7 +155,7 @@ for k, d in sorted(runs.items()):
     Cmedium = -(6 * L["glucose_cells_dF"] + 2 * L["acetate_cells_dF"] + L["CO2_cells_dF"]) * 1e-15   # mmol C leaving the medium
     Cb = Cbio * dgdw
     rel = abs(Cmedium / Cb - 1) if Cb != 0 else float("inf")
-    chk(rel <= a.tol_c, f"D carbon dx {k[1]} dt {k[2]}: medium loses {Cmedium:.4g} mmol C, biomass gains {Cb:.4g} (differ {rel*100:.2f}%, limit {a.tol_c*100:g}%)")
+    chk(rel <= a.tol_c, f"D carbon {k[0]} dx {k[1]} dt {k[2]}: medium loses {Cmedium:.4g} mmol C, biomass gains {Cb:.4g} (differ {rel*100:.2f}%, limit {a.tol_c*100:g}%)")
 
 print("\n%d check(s) failed" % len(fails) if fails else "\nall checks passed")
 sys.exit(1 if fails else 0)

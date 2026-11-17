@@ -1,7 +1,8 @@
 #!/bin/bash
 # Voxel-size and time-step test: one e_coli_core cell in a closed 16 um box, dx in {0.8,1.6,3.2} x dt in {0.005,0.01,0.02},
 # an "inactive" series (cap not limiting; outputs must agree across dx and dt) and a "capped" series (glucose D=0, cap must act
-# and empty the cell's voxel without overdraw), plus ledger residual and carbon balance, and the elemental balance of the model.
+# and empty the cell's voxel without overdraw), a "ratio" series (intracellular_dt = 2 and 10 x dt; must agree with dFBA every step),
+# plus ledger residual and carbon balance, and the elemental balance of the model.
 # Needs a staged dfba-unit-test binary. Single thread per run, runs in parallel (JOBS, default 4).
 # usage (from the staged root): scripts/run_dxdt_test.sh [./dfba-unit-test] [max_time_min]
 # Output goes to output_dxdt_<kind>_dx<dx>_dt<dt>/; existing results are moved aside, never deleted.

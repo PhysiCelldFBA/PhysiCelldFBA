@@ -21,7 +21,9 @@ module, not a biological case study. It checks four things:
    dx ∈ {0.8, 1.6, 3.2} µm and dt ∈ {0.005, 0.01, 0.02} min (the diffusion and the dFBA time step
    kept equal). While the uptake cap is not limiting, glucose consumption, cell volume and growth
    rate must agree across dx and dt; with a non-diffusing glucose pool the cap must act and empty the
-   cell's voxel without overdrawing it. The same runs check the per-step conservation ledger, the
+   cell's voxel without overdrawing it. A "ratio" series runs the dFBA every 2 and 10 diffusion steps
+   (dx 1.6 µm, dt 0.01 min) and must agree with the run that solves every step: the exchange set by a
+   solve is applied once per dFBA window, not once per diffusion step. The same runs check the per-step conservation ledger, the
    carbon balance and the elemental balance of the model. Driven by `scripts/run_dxdt_test.sh`, which
    builds its configs from the default `config/PhysiCell_settings.xml`
    (`scripts/gen_dxdt_configs.py`) and checks them with `scripts/check_dxdt.py` and
